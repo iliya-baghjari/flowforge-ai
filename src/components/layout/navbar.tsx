@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ className }) => {
           <ThemeToggle />
 
           <div className="ml-1 flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-2 py-1.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-violet-600 text-sm font-semibold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-primary to-violet-600 text-sm font-semibold text-white">
               AL
             </div>
             <div className="hidden sm:block">

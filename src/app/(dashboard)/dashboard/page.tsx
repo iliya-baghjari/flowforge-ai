@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 export default function DashboardPage() {
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-violet-500/10 p-6 shadow-sm">
+      <section className="rounded-2xl border border-border/60 bg-linear-to-br from-primary/10 via-background to-violet-500/10 p-6 shadow-sm">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
