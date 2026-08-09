@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
+const inter = localFont({
+  src: "../../public/font/Inter_18pt-Regular.ttf",
   variable: "--font-inter",
+  weight: "100 900",
+  display: "swap",
 });
+
+
 
 export const metadata: Metadata = {
   title: "FlowForge AI",
