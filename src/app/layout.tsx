@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { SessionProvider } from "next-auth/react";
+import AuthProvider from "../components/providers/session-provider"; // import the client provider
 
 import { auth } from "@/auth";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -30,7 +30,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
-        <SessionProvider session={session}>
+        <AuthProvider  session={session}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -39,7 +39,7 @@ export default async function RootLayout({
           >
             {children}
           </ThemeProvider>
-        </SessionProvider>
+        </AuthProvider >
       </body>
     </html>
   );
