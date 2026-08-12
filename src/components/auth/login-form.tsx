@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
@@ -10,7 +13,9 @@ import { loginSchema, type LoginFormValues } from "@/lib/schemas";
 import { cn } from "@/lib/utils";
 
 export const LoginForm: React.FC = () => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = React.useState(false);
+  const [error, setError] = React.useState("");
   const {
     register,
     handleSubmit,
@@ -21,8 +26,24 @@ export const LoginForm: React.FC = () => {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    console.log("Login submitted", values);
+    setError("");
+    try {
+      const result = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+
+      if (!result?.ok) {
+        setError(result?.error || "Invalid credentials");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+      console.error(err);
+    }
   };
 
   return (
@@ -49,9 +70,14 @@ export const LoginForm: React.FC = () => {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground" htmlFor="password">
-          Password
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-foreground" htmlFor="password">
+            Password
+          </label>
+          <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <div className="relative">
           <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -76,6 +102,12 @@ export const LoginForm: React.FC = () => {
         </div>
         {errors.password ? <p className="text-sm text-destructive">{errors.password.message}</p> : null}
       </div>
+
+      {error && (
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Signing in..." : "Sign in"}

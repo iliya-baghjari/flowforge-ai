@@ -1,4 +1,11 @@
+"use client";
+
+import { useSession } from "next-auth/react";
+import { AvatarUpload } from "@/components/auth/avatar-upload";
+
 export default function ProfilePage() {
+  const { data: session } = useSession();
+
   return (
     <div className="space-y-6">
       <div>
@@ -8,15 +15,24 @@ export default function ProfilePage() {
 
       <div className="space-y-4 max-w-2xl">
         <div className="rounded-lg border border-border/60 bg-card p-6">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-2xl font-semibold text-primary">U</span>
-            </div>
-            <div>
-              <h3 className="font-semibold">User Profile</h3>
-              <p className="text-sm text-muted-foreground">user@example.com</p>
-            </div>
-          </div>
+          <h3 className="font-semibold mb-4">Avatar</h3>
+          <AvatarUpload
+            currentImage={session?.user?.image}
+            onUpload={async (file) => {
+              // Upload avatar to your server
+              const formData = new FormData();
+              formData.append("avatar", file);
+              
+              const response = await fetch("/api/user/avatar", {
+                method: "POST",
+                body: formData,
+              });
+
+              if (!response.ok) {
+                throw new Error("Failed to upload avatar");
+              }
+            }}
+          />
         </div>
 
         <div className="rounded-lg border border-border/60 bg-card p-6">
@@ -24,12 +40,18 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Full Name</label>
-              <p className="text-sm text-muted-foreground mt-1">Your full name</p>
+              <p className="text-sm text-muted-foreground mt-1">{session?.user?.name || "Not provided"}</p>
             </div>
             <div>
               <label className="text-sm font-medium">Email</label>
-              <p className="text-sm text-muted-foreground mt-1">user@example.com</p>
+              <p className="text-sm text-muted-foreground mt-1">{session?.user?.email}</p>
             </div>
+            {session?.user?.emailVerified && (
+              <div>
+                <label className="text-sm font-medium">Email Verified</label>
+                <p className="text-sm text-emerald-600 mt-1">✓ Verified on {new Date(session.user.emailVerified).toLocaleDateString()}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

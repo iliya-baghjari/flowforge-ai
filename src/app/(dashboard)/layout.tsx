@@ -5,5 +5,5 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 export default function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <DashboardShell>{children}</DashboardShell>;
+  return <DashboardShell className="p-2">{children}</DashboardShell>;
 }

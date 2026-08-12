@@ -12,6 +12,7 @@ declare module "next-auth" {
   interface Session {
     user: DefaultSession["user"] & {
       id: string;
+      emailVerified?: Date | null;
     };
   }
 }
@@ -21,6 +22,7 @@ declare module "next-auth/jwt" {
     id?: string;
     accessToken?: string;
     provider?: string;
+    emailVerified?: Date | null;
   }
 }
 
@@ -86,6 +88,7 @@ export const authConfig = {
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
+        token.emailVerified = user.emailVerified;
       }
 
       if (trigger === "update") {
@@ -103,6 +106,7 @@ export const authConfig = {
           token.email = dbUser.email;
           token.name = dbUser.name;
           token.picture = dbUser.image;
+          token.emailVerified = dbUser.emailVerified;
         }
       }
 
@@ -112,6 +116,7 @@ export const authConfig = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.name = token.name as string | null;
+        session.user.emailVerified = token.emailVerified as Date | null;
         session.user.email = token.email as string | null;
         session.user.image = token.picture as string | null;
       }
@@ -132,6 +137,11 @@ export const authConfig = {
 const authHandler = NextAuth(authConfig);
 
 export const auth = () => getServerSession(authConfig);
+
+export async function signOut() {
+  return await auth();
+}
+
 export const { GET, POST } = authHandler as unknown as {
   GET: typeof authHandler;
   POST: typeof authHandler;
