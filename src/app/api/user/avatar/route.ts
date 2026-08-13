@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getPrisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"; // ✅ Correct import
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,15 +39,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prisma = getPrisma();
-    if (!prisma) {
-      return NextResponse.json(
-        { error: "Database not configured" },
-        { status: 500 }
-      );
-    }
+    // ✅ Remove the incorrect `prisma()` call and the `if (!prisma)` check
+    // Just use `prisma` directly — it's already imported and initialized
 
-    // For now, create a data URL (in production, upload to cloud storage like S3, Cloudinary, etc.)
+    // Convert file to base64 data URL (temporary solution)
     const buffer = await file.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
     const dataUrl = `data:${file.type};base64,${base64}`;

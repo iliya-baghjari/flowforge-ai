@@ -1,19 +1,18 @@
-import NextAuth, { type DefaultSession } from "next-auth";
-import { getServerSession } from "next-auth/next";
+import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { prisma } from "@/lib/prisma"; // ✅ Import the instance directly (no function call)
+import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
-import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
-import { getPrisma } from "@/lib/prisma";
-
+// Extend the built-in session types
 declare module "next-auth" {
   interface Session {
-    user: DefaultSession["user"] & {
+    user: {
       id: string;
       emailVerified?: Date | null;
-    };
+    } & DefaultSession["user"];
   }
 }
 
@@ -26,11 +25,12 @@ declare module "next-auth/jwt" {
   }
 }
 
-const prisma = getPrisma();
-
-export const authConfig = {
-  adapter: prisma ? PrismaAdapter(prisma) : undefined,
-  session: { strategy: "jwt" as const },
+// ✅ Export handlers, auth, signIn, signOut using the modern pattern
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: PrismaAdapter(prisma), // prisma is already a valid client
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     Credentials({
       name: "Credentials",
@@ -39,28 +39,24 @@ export const authConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
+        if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required.");
-        }
-
-        if (!prisma) {
-          throw new Error("Database is not configured yet. Please configure DATABASE_URL first.");
         }
 
         const user = await prisma.user.findUnique({
           where: { email: String(credentials.email) },
         });
 
-        if (!user?.password) {
+        if (!user || !user.password) {
           throw new Error("Invalid email or password.");
         }
 
-        const validPassword = await bcrypt.compare(
+        const isValid = await bcrypt.compare(
           String(credentials.password),
-          user.password,
+          user.password
         );
 
-        if (!validPassword) {
+        if (!isValid) {
           throw new Error("Invalid email or password.");
         }
 
@@ -82,7 +78,8 @@ export const authConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }: { token: any; user?: any; trigger?: string }) {
+    async jwt({ token, user, trigger, session }) {
+      // On initial sign-in, add user data to token
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -91,58 +88,37 @@ export const authConfig = {
         token.emailVerified = user.emailVerified;
       }
 
-      if (trigger === "update") {
-        if (!prisma) {
-          return token;
-        }
-
-        const email = typeof token.email === "string" ? token.email : undefined;
-        const dbUser = await prisma.user.findUnique({
-          where: { email },
-        });
-
-        if (dbUser) {
-          token.id = dbUser.id;
-          token.email = dbUser.email;
-          token.name = dbUser.name;
-          token.picture = dbUser.image;
-          token.emailVerified = dbUser.emailVerified;
-        }
+      // Handle client-side session updates
+      if (trigger === "update" && session?.user) {
+        token.name = session.user.name;
+        token.picture = session.user.image;
+        // If you need to refresh other fields, you can query the database here
+        // but for simplicity we just update name and picture from the session
       }
 
       return token;
     },
-    async session({ session, token }: { session: any; token: any }) {
+    async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.name = token.name as string | null;
-        session.user.emailVerified = token.emailVerified as Date | null;
         session.user.email = token.email as string | null;
+        session.user.name = token.name as string | null;
         session.user.image = token.picture as string | null;
+        session.user.emailVerified = token.emailVerified as Date | null;
       }
-
       return session;
     },
-    async signIn() {
+    async signIn({ user, account, profile }) {
+      // Allow all sign-ins; you can add restrictions here
       return true;
     },
-    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+    async redirect({ url, baseUrl }) {
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       if (new URL(url).origin === baseUrl) return url;
       return baseUrl;
     },
   },
-};
-
-const authHandler = NextAuth(authConfig);
-
-export const auth = () => getServerSession(authConfig);
-
-export async function signOut() {
-  return await auth();
-}
-
-export const { GET, POST } = authHandler as unknown as {
-  GET: typeof authHandler;
-  POST: typeof authHandler;
-};
+  pages: {
+    signIn: "/login", // Optional custom login page
+  },
+});
