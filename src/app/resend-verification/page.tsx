@@ -3,7 +3,13 @@ import { ResendVerificationForm } from "@/components/auth/resend-verification-fo
 
 export default function ResendVerificationPage() {
   return (
-    <AuthShell>
+    <AuthShell
+      title="Resend verification email"
+      subtitle="Enter your email and we'll send a new verification link."
+      footerText="Already verified?"
+      footerLinkHref="/login"
+      footerLinkLabel="Sign in"
+    >
       <ResendVerificationForm />
     </AuthShell>
   );
