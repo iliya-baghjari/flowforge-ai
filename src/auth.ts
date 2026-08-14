@@ -1,38 +1,44 @@
-import NextAuth from "next-auth";
+import NextAuth, {
+  type DefaultSession,
+  getServerSession,
+  type NextAuthOptions,
+} from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "@/lib/prisma"; // ✅ Import the instance directly (no function call)
-import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import GitHub from "next-auth/providers/github";
+import { prisma } from "@/lib/prisma";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 
 // Extend the built-in session types
 declare module "next-auth" {
   interface Session {
-    user: {
+    user: DefaultSession["user"] & {
       id: string;
       emailVerified?: Date | null;
-    } & DefaultSession["user"];
+    };
+  }
+
+  interface User {
+    id?: string;
+    emailVerified?: Date | null;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
-    accessToken?: string;
-    provider?: string;
     emailVerified?: Date | null;
   }
 }
 
-// ✅ Export handlers, auth, signIn, signOut using the modern pattern
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma), // prisma is already a valid client
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
   },
   providers: [
-    Credentials({
+    CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -68,18 +74,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
-    Google({
+    GoogleProvider({
       clientId: process.env.AUTH_GOOGLE_ID ?? "",
       clientSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
     }),
-    GitHub({
+    GitHubProvider({
       clientId: process.env.AUTH_GITHUB_ID ?? "",
       clientSecret: process.env.AUTH_GITHUB_SECRET ?? "",
     }),
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // On initial sign-in, add user data to token
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -88,12 +93,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.emailVerified = user.emailVerified;
       }
 
-      // Handle client-side session updates
       if (trigger === "update" && session?.user) {
         token.name = session.user.name;
         token.picture = session.user.image;
-        // If you need to refresh other fields, you can query the database here
-        // but for simplicity we just update name and picture from the session
       }
 
       return token;
@@ -108,8 +110,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-    async signIn({ user, account, profile }) {
-      // Allow all sign-ins; you can add restrictions here
+    async signIn() {
       return true;
     },
     async redirect({ url, baseUrl }) {
@@ -119,6 +120,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   pages: {
-    signIn: "/login", // Optional custom login page
+    signIn: "/login",
   },
-});
+};
+
+export async function auth() {
+  return getServerSession(authOptions);
+}
+
+const authHandler = NextAuth(authOptions);
+export const GET = authHandler;
+export const POST = authHandler;
+export default authHandler;

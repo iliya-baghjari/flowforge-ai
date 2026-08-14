@@ -1,7 +1,7 @@
 import crypto from "crypto";
-import { getPrisma } from "./prisma";
+import { prisma } from "./prisma";
 
-const prisma = getPrisma();
+const prisma = prisma();
 
 export async function generateVerificationToken(email: string) {
   const token = crypto.randomBytes(32).toString("hex");
