@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
@@ -12,9 +13,13 @@ import { cn } from "@/lib/utils";
 export const RegisterForm: React.FC = () => {
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [message, setMessage] = React.useState("");
+  const router = useRouter();
   const {
     register,
     handleSubmit,
+    setError: setFieldError,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -28,8 +33,40 @@ export const RegisterForm: React.FC = () => {
   });
 
   const onSubmit = async (values: RegisterFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    console.log("Registration submitted", values);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const fieldErrors = data.fieldErrors as Partial<Record<keyof RegisterFormValues, string[]>> | undefined;
+        if (fieldErrors) {
+          for (const [field, messages] of Object.entries(fieldErrors)) {
+            if (messages?.length) {
+              setFieldError(field as keyof RegisterFormValues, { message: messages[0] });
+            }
+          }
+        }
+        if (response.status === 409) {
+          setFieldError("email", { message: data.error });
+        }
+        setError(data.error || "An error occurred. Please try again.");
+        return;
+      }
+
+      setMessage(data.message);
+      router.push("/login");
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+      console.error(err);
+    }
   };
 
   return (
@@ -141,6 +178,9 @@ export const RegisterForm: React.FC = () => {
         </span>
       </label>
       {errors.terms ? <p className="text-sm text-destructive">{errors.terms.message}</p> : null}
+
+      {error ? <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div> : null}
+      {message ? <div className="rounded-lg bg-primary/10 p-3 text-sm text-primary">{message}</div> : null}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Creating account..." : "Create account"}
