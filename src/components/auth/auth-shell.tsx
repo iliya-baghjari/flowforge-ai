@@ -5,22 +5,22 @@ import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AuthShellProps {
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
   children: React.ReactNode;
-  footerText: string;
-  footerLinkHref: string;
-  footerLinkLabel: string;
+  footerText?: string;
+  footerLinkHref?: string;
+  footerLinkLabel?: string;
   className?: string;
 }
 
 export const AuthShell: React.FC<AuthShellProps> = ({
-  title,
-  subtitle,
+  title = "Welcome",
+  subtitle = "Keep your product milestones, prompts, and launches moving in one elegant space.",
   children,
-  footerText,
-  footerLinkHref,
-  footerLinkLabel,
+  footerText = "Need an account?",
+  footerLinkHref = "/register",
+  footerLinkLabel = "Create one",
   className,
 }) => {
   return (

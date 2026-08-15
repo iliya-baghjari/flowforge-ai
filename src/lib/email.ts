@@ -1,7 +1,5 @@
 import crypto from "crypto";
-import { prisma } from "./prisma";
-
-const prisma = prisma();
+import { prisma } from "@/lib/prisma";
 
 export async function generateVerificationToken(email: string) {
   const token = crypto.randomBytes(32).toString("hex");
