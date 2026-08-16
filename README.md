@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FlowForge AI
 
-## Getting Started
+**AI-Powered Project Management Platform**
 
-First, run the development server:
+FlowForge AI is a modern, full-stack project management application built with Next.js. It helps teams and individuals manage projects, tasks, deadlines, and progress with a clean dashboard, authentication, and real-time insights.
+
+🔗 **Live Demo**: [https://flowforge-ai-rose.vercel.app](https://flowforge-ai-rose.vercel.app)
+
+---
+
+## ✨ Features
+
+### Authentication & Security
+- Email/Password registration & login
+- Google & GitHub OAuth
+- Email verification
+- Password reset flow
+- Secure JWT sessions
+- Protected routes with middleware
+- Avatar upload
+
+### Dashboard
+- Summary cards (Total Tasks, Completed, Upcoming Deadlines, Active Projects)
+- Activity feed
+- Burn-down chart
+- Task distribution (Pie chart)
+- Mini calendar with deadline indicators
+
+### Project & Task Management
+- Projects with status (active / completed / paused)
+- Tasks with status, priority, and due dates
+- Activity logging
+
+---
+
+## 🛠 Tech Stack
+
+| Category          | Technology                          |
+|-------------------|-------------------------------------|
+| Framework         | Next.js 16 (App Router)             |
+| Language          | TypeScript                          |
+| Database          | PostgreSQL + Prisma 7               |
+| Authentication    | Auth.js (NextAuth v5)               |
+| Styling           | Tailwind CSS 4                      |
+| Charts            | Recharts                            |
+| Forms & Validation| React Hook Form + Zod               |
+| State Management  | Zustand                             |
+| Deployment        | Vercel                              |
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+git clone https://github.com/iliya-baghjari/flowforge-ai.git
+cd flowforge-ai
