@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
@@ -10,8 +11,10 @@ import { registerSchema, type RegisterFormValues } from "@/lib/schemas";
 import { cn } from "@/lib/utils";
 
 export const RegisterForm: React.FC = () => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [serverError, setServerError] = React.useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -26,12 +29,47 @@ export const RegisterForm: React.FC = () => {
       terms: false,
     },
   });
+ const onSubmit = async (values: RegisterFormValues) => {
+    // Clear any previous server error
+    setServerError(null);
 
-  const onSubmit = async (values: RegisterFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    console.log("Registration submitted", values);
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          termsAccepted: values.terms,
+        }),
+      });
+
+      // Try to parse JSON, but handle non‑JSON responses gracefully
+      let data: { error?: string } | null = null;
+      try {
+        data = await res.json();
+      } catch (jsonError) {
+        // If the server returned HTML or empty body, treat as an error
+        data = null;
+      }
+
+      if (!res.ok) {
+        // Use the server's error message if available, otherwise fallback
+        setServerError(data?.error ?? "Registration failed. Please try again.");
+        return;
+      }
+
+      // Success – redirect to login with a success flag
+      router.push("/login?registered=true");
+    } catch (networkError) {
+      // Network error or fetch failed
+      console.error("Network error:", networkError);
+      setServerError("Unable to connect to the server. Please check your internet connection.");
+    }
   };
-
   return (
     <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-2">
