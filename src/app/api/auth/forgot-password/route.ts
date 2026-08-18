@@ -5,8 +5,9 @@ import { generatePasswordResetToken, sendPasswordResetEmail } from "@/lib/email"
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
+    const normalizedEmail = String(email ?? "").trim().toLowerCase();
 
-    if (!email) {
+    if (!normalizedEmail) {
       return NextResponse.json(
         { error: "Email is required" },
         { status: 400 }
@@ -21,9 +22,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     // Always return success for security reasons (don't reveal if email exists)
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate and send reset token
-    const token = await generatePasswordResetToken(email);
-    await sendPasswordResetEmail(email, token);
+    const token = await generatePasswordResetToken(normalizedEmail);
+    await sendPasswordResetEmail(normalizedEmail, token);
 
     return NextResponse.json(
       { 

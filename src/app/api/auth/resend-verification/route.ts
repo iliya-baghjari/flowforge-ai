@@ -5,8 +5,9 @@ import { generateVerificationToken, sendVerificationEmail } from "@/lib/email";
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
+    const normalizedEmail = String(email ?? "").trim().toLowerCase();
 
-    if (!email) {
+    if (!normalizedEmail) {
       return NextResponse.json(
         { error: "Email is required" },
         { status: 400 }
@@ -21,9 +22,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate and send verification token
-    const token = await generateVerificationToken(email);
-    await sendVerificationEmail(email, token);
+    const token = await generateVerificationToken(normalizedEmail);
+    await sendVerificationEmail(normalizedEmail, token);
 
     return NextResponse.json(
       { 

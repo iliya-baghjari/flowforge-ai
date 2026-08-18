@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -14,16 +14,7 @@ export function EmailVerificationForm() {
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (token) {
-      verifyEmail(token);
-    } else {
-      setVerifying(false);
-      setError("Invalid or missing verification token");
-    }
-  }, [token]);
-
-  async function verifyEmail(verificationToken: string) {
+  const verifyEmail = useCallback(async (verificationToken: string) => {
     try {
       const response = await fetch("/api/auth/verify-email", {
         method: "POST",
@@ -47,7 +38,17 @@ export function EmailVerificationForm() {
     } finally {
       setVerifying(false);
     }
-  }
+  }, [router]);
+
+  useEffect(() => {
+    if (!token) {
+      setVerifying(false);
+      setError("Invalid or missing verification token");
+      return;
+    }
+
+    void verifyEmail(token);
+  }, [token, verifyEmail]);
 
   return (
     <div className="space-y-6 text-center">

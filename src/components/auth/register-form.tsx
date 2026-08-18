@@ -15,6 +15,7 @@ export const RegisterForm: React.FC = () => {
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -29,12 +30,13 @@ export const RegisterForm: React.FC = () => {
       terms: false,
     },
   });
- const onSubmit = async (values: RegisterFormValues) => {
+
+  const onSubmit = async (values: RegisterFormValues) => {
     // Clear any previous server error
     setServerError(null);
 
     try {
-      const res = await fetch("/api/register", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,26 +45,28 @@ export const RegisterForm: React.FC = () => {
           name: values.name,
           email: values.email,
           password: values.password,
-          termsAccepted: values.terms,
+          confirmPassword: values.confirmPassword,
+          terms: values.terms,
         }),
       });
 
-      // Try to parse JSON, but handle non‑JSON responses gracefully
-      let data: { error?: string } | null = null;
+      let data: { error?: string; fieldErrors?: Record<string, string[]> } | null = null;
       try {
         data = await res.json();
-      } catch (jsonError) {
-        // If the server returned HTML or empty body, treat as an error
+      } catch {
         data = null;
       }
 
       if (!res.ok) {
-        // Use the server's error message if available, otherwise fallback
-        setServerError(data?.error ?? "Registration failed. Please try again.");
+        const fieldErrorMessage = data?.fieldErrors
+          ? Object.values(data.fieldErrors)
+              .flat()
+              .join(" ")
+          : null;
+        setServerError(fieldErrorMessage ?? data?.error ?? "Registration failed. Please try again.");
         return;
       }
 
-      // Success – redirect to login with a success flag
       router.push("/login?registered=true");
     } catch (networkError) {
       // Network error or fetch failed
@@ -70,8 +74,10 @@ export const RegisterForm: React.FC = () => {
       setServerError("Unable to connect to the server. Please check your internet connection.");
     }
   };
+
   return (
     <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+      {/* Name field */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground" htmlFor="name">
           Full name
@@ -93,6 +99,7 @@ export const RegisterForm: React.FC = () => {
         {errors.name ? <p className="text-sm text-destructive">{errors.name.message}</p> : null}
       </div>
 
+      {/* Email field */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground" htmlFor="email">
           Email
@@ -114,6 +121,7 @@ export const RegisterForm: React.FC = () => {
         {errors.email ? <p className="text-sm text-destructive">{errors.email.message}</p> : null}
       </div>
 
+      {/* Password field */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground" htmlFor="password">
           Password
@@ -143,6 +151,7 @@ export const RegisterForm: React.FC = () => {
         {errors.password ? <p className="text-sm text-destructive">{errors.password.message}</p> : null}
       </div>
 
+      {/* Confirm password field */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground" htmlFor="confirmPassword">
           Confirm password
@@ -172,6 +181,7 @@ export const RegisterForm: React.FC = () => {
         {errors.confirmPassword ? <p className="text-sm text-destructive">{errors.confirmPassword.message}</p> : null}
       </div>
 
+      {/* Terms checkbox */}
       <label className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/70 p-3 text-sm text-muted-foreground">
         <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-border text-primary" {...register("terms")} />
         <span>
@@ -179,6 +189,9 @@ export const RegisterForm: React.FC = () => {
         </span>
       </label>
       {errors.terms ? <p className="text-sm text-destructive">{errors.terms.message}</p> : null}
+
+      {/* Server error */}
+      {serverError ? <p className="text-sm text-destructive">{serverError}</p> : null}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Creating account..." : "Create account"}

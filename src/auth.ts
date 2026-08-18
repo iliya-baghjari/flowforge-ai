@@ -1,16 +1,14 @@
-import NextAuth, {
-  type DefaultSession,
-  getServerSession,
-  type NextAuthOptions,
-} from "next-auth";
+import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "@/lib/prisma";
-import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-import GitHubProvider from "next-auth/providers/github";
+import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import GitHub from "next-auth/providers/github";
+import type { DefaultSession } from "next-auth";
 import bcrypt from "bcryptjs";
 
-// Extend the built-in session types
+import { prisma } from "@/lib/prisma";
+import { authConfig } from "./auth.config";
+
 declare module "next-auth" {
   interface Session {
     user: DefaultSession["user"] & {
@@ -25,20 +23,11 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    id?: string;
-    emailVerified?: Date | null;
-  }
-}
-
-export const authOptions: NextAuthOptions = {
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  session: {
-    strategy: "jwt",
-  },
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -49,21 +38,23 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required.");
         }
 
+        const email = String(credentials.email).trim().toLowerCase();
         const user = await prisma.user.findUnique({
-          where: { email: String(credentials.email) },
+          where: { email },
         });
 
         if (!user || !user.password) {
           throw new Error("Invalid email or password.");
         }
 
-        const isValid = await bcrypt.compare(
-          String(credentials.password),
-          user.password
-        );
+        const isValid = await bcrypt.compare(String(credentials.password), user.password);
 
         if (!isValid) {
           throw new Error("Invalid email or password.");
+        }
+
+        if (!user.emailVerified) {
+          throw new Error("Please verify your email before signing in.");
         }
 
         return {
@@ -71,26 +62,28 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           image: user.image,
+          emailVerified: user.emailVerified,
         };
       },
     }),
-    GoogleProvider({
+    Google({
       clientId: process.env.AUTH_GOOGLE_ID ?? "",
       clientSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
     }),
-    GitHubProvider({
+    GitHub({
       clientId: process.env.AUTH_GITHUB_ID ?? "",
       clientSecret: process.env.AUTH_GITHUB_SECRET ?? "",
     }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
-        token.emailVerified = user.emailVerified;
+        token.emailVerified = user.emailVerified ?? null;
       }
 
       if (trigger === "update" && session?.user) {
@@ -103,7 +96,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.email = token.email as string | null;
+        session.user.email = (token.email as string | undefined) ?? "";
         session.user.name = token.name as string | null;
         session.user.image = token.picture as string | null;
         session.user.emailVerified = token.emailVerified as Date | null;
@@ -122,13 +115,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-};
+});
 
-export async function auth() {
-  return getServerSession(authOptions);
-}
-
-const authHandler = NextAuth(authOptions);
-export const GET = authHandler;
-export const POST = authHandler;
-export default authHandler;
+export default auth;
