@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 
 export const LoginForm: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState("");
   const {
@@ -32,6 +34,7 @@ export const LoginForm: React.FC = () => {
         email: values.email,
         password: values.password,
         redirect: false,
+        callbackUrl,
       });
 
       if (!result?.ok) {
@@ -39,7 +42,7 @@ export const LoginForm: React.FC = () => {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(callbackUrl);
     } catch (err) {
       setError("An error occurred. Please try again.");
       console.error(err);
