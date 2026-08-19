@@ -25,42 +25,43 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       take: 20,
-      select: {
-        taskId: true,
-        title: true,
-        description: true,
-        createdAt: true,
+      include: {
         task: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-            project: {
-              select: {
-                name: true,
-              },
-            },
+          include: {
+            project: true,
           },
         },
       },
     });
 
     const seenTaskIds = new Set<string>();
-    const recentTasks = recentActivity.flatMap((entry) => {
+    const recentTasks: Array<{
+      id: string;
+      title: string;
+      status: string;
+      projectName?: string;
+      lastUpdated: Date;
+    }> = [];
+
+    for (const entry of recentActivity) {
       const task = entry.task;
       if (!task || !entry.taskId || seenTaskIds.has(entry.taskId)) {
-        return [];
+        continue;
       }
 
       seenTaskIds.add(entry.taskId);
-      return [{
+      recentTasks.push({
         id: task.id,
         title: task.title || entry.title,
         status: task.status,
         projectName: task.project?.name ?? undefined,
         lastUpdated: entry.createdAt,
-      }];
-    }).slice(0, 5);
+      });
+
+      if (recentTasks.length >= 5) {
+        break;
+      }
+    }
 
     return NextResponse.json(recentTasks);
   } catch (error) {
