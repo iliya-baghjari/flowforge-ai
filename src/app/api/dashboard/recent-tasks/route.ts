@@ -25,15 +25,33 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       take: 20,
-      include: {
-        task: {
-          include: {
-            project: true,
-          },
-        },
+      select: {
+        id: true,
+        taskId: true,
+        title: true,
+        createdAt: true,
       },
     });
 
+    const taskIds = [...new Set(
+      recentActivity
+        .map((entry) => entry.taskId)
+        .filter((taskId): taskId is string => Boolean(taskId))
+    )];
+
+    const tasks = taskIds.length
+      ? await prisma.task.findMany({
+          where: {
+            id: { in: taskIds },
+            userId: user.id,
+          },
+          include: {
+            project: true,
+          },
+        })
+      : [];
+
+    const taskMap = new Map(tasks.map((task) => [task.id, task]));
     const seenTaskIds = new Set<string>();
     const recentTasks: Array<{
       id: string;
@@ -44,8 +62,12 @@ export async function GET() {
     }> = [];
 
     for (const entry of recentActivity) {
-      const task = entry.task;
-      if (!task || !entry.taskId || seenTaskIds.has(entry.taskId)) {
+      if (!entry.taskId || seenTaskIds.has(entry.taskId)) {
+        continue;
+      }
+
+      const task = taskMap.get(entry.taskId);
+      if (!task) {
         continue;
       }
 
