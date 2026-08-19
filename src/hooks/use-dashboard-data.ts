@@ -39,9 +39,18 @@ interface Deadline {
   status: string;
 }
 
+interface RecentTaskInteraction {
+  id: string;
+  title: string;
+  status: string;
+  projectName?: string;
+  lastUpdated: Date;
+}
+
 export function useDashboardData() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [recentTasks, setRecentTasks] = useState<RecentTaskInteraction[]>([]);
   const [distribution, setDistribution] = useState<TaskDistribution[]>([]);
   const [burndownData, setBurndownData] = useState<BurnDownData[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
@@ -54,21 +63,23 @@ export function useDashboardData() {
         setLoading(true);
         setError(null);
 
-        const [statsRes, activitiesRes, distributionRes, burndownRes, deadlinesRes] = await Promise.all([
+        const [statsRes, activitiesRes, recentTasksRes, distributionRes, burndownRes, deadlinesRes] = await Promise.all([
           fetch("/api/dashboard/stats"),
           fetch("/api/dashboard/activities"),
+          fetch("/api/dashboard/recent-tasks"),
           fetch("/api/dashboard/task-distribution"),
           fetch("/api/dashboard/burndown"),
           fetch("/api/dashboard/deadlines"),
         ]);
 
-        if (!statsRes.ok || !activitiesRes.ok || !distributionRes.ok || !burndownRes.ok || !deadlinesRes.ok) {
+        if (!statsRes.ok || !activitiesRes.ok || !recentTasksRes.ok || !distributionRes.ok || !burndownRes.ok || !deadlinesRes.ok) {
           throw new Error("Failed to fetch dashboard data");
         }
 
-        const [statsData, activitiesData, distributionData, burndownDataRes, deadlinesData] = await Promise.all([
+        const [statsData, activitiesData, recentTasksData, distributionData, burndownDataRes, deadlinesData] = await Promise.all([
           statsRes.json(),
           activitiesRes.json(),
+          recentTasksRes.json(),
           distributionRes.json(),
           burndownRes.json(),
           deadlinesRes.json(),
@@ -78,6 +89,10 @@ export function useDashboardData() {
         setActivities(activitiesData.map((a: any) => ({
           ...a,
           createdAt: new Date(a.createdAt),
+        })));
+        setRecentTasks(recentTasksData.map((task: any) => ({
+          ...task,
+          lastUpdated: new Date(task.lastUpdated),
         })));
         setDistribution(distributionData);
         setBurndownData(burndownDataRes);
@@ -99,6 +114,7 @@ export function useDashboardData() {
   return {
     stats,
     activities,
+    recentTasks,
     distribution,
     burndownData,
     deadlines,

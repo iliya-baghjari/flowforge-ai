@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import {
+  ArrowUpRight,
   CheckCircle2,
   MessageCircle,
   Plus,
@@ -15,6 +17,8 @@ interface Activity {
   title: string;
   description?: string;
   createdAt: Date;
+  taskId?: string | null;
+  projectId?: string | null;
   user?: {
     name?: string;
     image?: string;
@@ -73,38 +77,55 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
       <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
       <div className="rounded-xl border border-border/60 bg-card p-6">
         <div className="space-y-4">
-          {activities.map((activity, index) => (
-            <div key={activity.id} className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div className="rounded-full border border-border/60 bg-background p-2">
-                  {getActivityIcon(activity.type)}
+          {activities.map((activity, index) => {
+            const hasTaskLink = Boolean(activity.taskId);
+
+            return (
+              <div key={activity.id} className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <div className="rounded-full border border-border/60 bg-background p-2">
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  {index < activities.length - 1 && (
+                    <div className="mt-2 h-8 w-0.5 bg-border/40" />
+                  )}
                 </div>
-                {index < activities.length - 1 && (
-                  <div className="mt-2 h-8 w-0.5 bg-border/40" />
-                )}
-              </div>
-              <div className="flex-1 pt-1 pb-4">
-                <p className="font-medium text-foreground">
-                  {getActivityLabel(activity.type)}
-                </p>
-                {activity.title && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {activity.title}
+                <div className="flex-1 pt-1 pb-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {getActivityLabel(activity.type)}
+                      </p>
+                      {activity.title && (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {activity.title}
+                        </p>
+                      )}
+                      {activity.description && (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {activity.description}
+                        </p>
+                      )}
+                    </div>
+                    {hasTaskLink && (
+                      <Link
+                        href={`/dashboard/tasks/${activity.taskId}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-border/60 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                      >
+                        View
+                        <ArrowUpRight className="h-3 w-3" />
+                      </Link>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(activity.createdAt), {
+                      addSuffix: true,
+                    })}
                   </p>
-                )}
-                {activity.description && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {activity.description}
-                  </p>
-                )}
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(activity.createdAt), {
-                    addSuffix: true,
-                  })}
-                </p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

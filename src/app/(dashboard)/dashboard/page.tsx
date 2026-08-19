@@ -7,10 +7,11 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { BurnDownChart } from "@/components/dashboard/burn-down-chart";
 import { TaskDistributionChart } from "@/components/dashboard/task-distribution-chart";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
+import { RecentTasks } from "@/components/dashboard/recent-tasks";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 
 export default function DashboardPage() {
-  const { stats, activities, distribution, burndownData, deadlines, loading, error } = useDashboardData();
+  const { stats, activities, recentTasks, distribution, burndownData, deadlines, loading, error } = useDashboardData();
 
   if (error) {
     return (
@@ -74,8 +75,9 @@ export default function DashboardPage() {
         <div className="lg:col-span-1">
           {distribution.length > 0 && <TaskDistributionChart data={distribution} />}
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           {activities.length > 0 && <ActivityFeed activities={activities} />}
+          {recentTasks.length > 0 && <RecentTasks tasks={recentTasks} />}
         </div>
       </div>
     </div>
