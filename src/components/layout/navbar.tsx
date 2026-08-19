@@ -8,8 +8,10 @@ import { Bell, Search, Sparkles, Menu, ChevronDown } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
+import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/sidebar-store";
+import { useWorkspaceStore } from "@/store/workspace-store";
 
 interface NavbarProps {
   className?: string;
@@ -19,6 +21,22 @@ export const Navbar: React.FC<NavbarProps> = ({ className }) => {
   const { toggle } = useSidebarStore();
   const { data: session } = useSession();
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const { setWorkspaces, workspaces } = useWorkspaceStore();
+
+  React.useEffect(() => {
+    const loadWorkspaces = async () => {
+      try {
+        const response = await fetch("/api/workspaces");
+        if (!response.ok) return;
+        const data = await response.json();
+        setWorkspaces(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to load workspaces:", error);
+      }
+    };
+
+    loadWorkspaces();
+  }, [setWorkspaces]);
 
   const userInitial = session?.user?.name?.[0]?.toUpperCase() || "U";
 
@@ -53,6 +71,8 @@ export const Navbar: React.FC<NavbarProps> = ({ className }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          <WorkspaceSwitcher workspaces={workspaces} />
+
           <Button
             variant="outline"
             size="sm"

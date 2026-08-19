@@ -20,7 +20,22 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   projects      Project[]
   tasks         Task[]
+  workspaces    Workspace[]
   activityLogs  ActivityLog[]
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  logoUrl   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, slug])
+  @@index([userId])
 }
 
 model Account {

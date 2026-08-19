@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/sidebar-store";
+import { useWorkspaceStore } from "@/store/workspace-store";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -33,6 +34,8 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const pathname = usePathname();
   const { isOpen, toggle } = useSidebarStore();
+  const { currentWorkspaceId, workspaces } = useWorkspaceStore();
+  const activeWorkspace = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
 
   return (
     <aside
@@ -62,8 +65,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           <p className="mb-1 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
             Workspace
           </p>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Northstar Labs</p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              {activeWorkspace?.logoUrl ? (
+                <img
+                  src={activeWorkspace.logoUrl}
+                  alt={activeWorkspace.name}
+                  className="h-7 w-7 rounded-md object-cover"
+                />
+              ) : (
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-xs font-semibold text-primary">
+                  {activeWorkspace?.name?.[0]?.toUpperCase() ?? "W"}
+                </div>
+              )}
+              <p className="truncate text-sm font-medium">
+                {activeWorkspace?.name ?? "Workspace"}
+              </p>
+            </div>
             <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
               Active
             </span>

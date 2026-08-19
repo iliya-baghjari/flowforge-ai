@@ -8,6 +8,7 @@ import { BurnDownChart } from "@/components/dashboard/burn-down-chart";
 import { TaskDistributionChart } from "@/components/dashboard/task-distribution-chart";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { RecentTasks } from "@/components/dashboard/recent-tasks";
+import { WorkspaceCreator } from "@/components/workspace/workspace-creator";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 
 export default function DashboardPage() {
@@ -45,6 +46,25 @@ export default function DashboardPage() {
           </Button>
         </div>
       </section>
+
+      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+        <WorkspaceCreator />
+        <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            Workspace status
+          </p>
+          <div className="mt-4 space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Name</p>
+              <p className="text-lg font-semibold text-foreground">Northstar Labs</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Slug</p>
+              <p className="text-lg font-semibold text-foreground">/northstar-labs</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Summary Cards */}
       {stats && (
