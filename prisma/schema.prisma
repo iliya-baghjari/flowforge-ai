@@ -21,21 +21,58 @@ model User {
   projects      Project[]
   tasks         Task[]
   workspaces    Workspace[]
+  workspaceMembers WorkspaceMember[]
+  workspaceInvites WorkspaceInvite[]
   activityLogs  ActivityLog[]
 }
 
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String
-  logoUrl   String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  logoUrl     String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members     WorkspaceMember[]
+  invites     WorkspaceInvite[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([userId, slug])
   @@index([userId])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String   @default("member") // admin, member, viewer
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model WorkspaceInvite {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String
+  role        String   @default("member") // admin, member, viewer
+  token       String   @unique
+  invitedById String
+  invitedBy   User     @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  acceptedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([email])
+  @@index([invitedById])
 }
 
 model Account {
