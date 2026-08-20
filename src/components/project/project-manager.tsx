@@ -255,7 +255,7 @@ export function ProjectManager() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Visibility</label>
-            <label className="flex h-[42px] items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-sm">
+            <label className="flex h-10.5 items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-sm">
               <input
                 type="checkbox"
                 checked={draft.archived}
