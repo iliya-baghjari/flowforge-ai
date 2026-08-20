@@ -77,6 +77,11 @@ export async function PATCH(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const workspace = await prisma.workspace.findUnique({ where: { id } });
+    if (!workspace) {
+      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    }
+
     const membership = await prisma.workspaceMember.findFirst({
       where: {
         workspaceId: id,
@@ -84,7 +89,10 @@ export async function PATCH(
       },
     });
 
-    if (!membership || !canAccessWorkspace(membership.role as any, "workspace:update")) {
+    const isOwner = workspace.userId === currentUser.id;
+    const canUpdate = isOwner || (membership && canAccessWorkspace(membership.role as any, "workspace:update"));
+
+    if (!canUpdate) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -95,11 +103,6 @@ export async function PATCH(
 
     if (!name && !slugInput && typeof logoUrl === "undefined") {
       return NextResponse.json({ error: "No updates supplied" }, { status: 400 });
-    }
-
-    const workspace = await prisma.workspace.findUnique({ where: { id } });
-    if (!workspace) {
-      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
     }
 
     const slug = slugInput ? slugify(slugInput) : workspace.slug;
@@ -153,6 +156,11 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const workspace = await prisma.workspace.findUnique({ where: { id } });
+    if (!workspace) {
+      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    }
+
     const membership = await prisma.workspaceMember.findFirst({
       where: {
         workspaceId: id,
@@ -160,7 +168,10 @@ export async function DELETE(
       },
     });
 
-    if (!membership || membership.role !== WorkspaceRoles.ADMIN) {
+    const isOwner = workspace.userId === currentUser.id;
+    const isAdmin = isOwner || (membership && membership.role === WorkspaceRoles.ADMIN);
+
+    if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

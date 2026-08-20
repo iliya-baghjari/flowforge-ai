@@ -59,6 +59,7 @@ export async function GET() {
       where: {
         userId: user.id,
         status: "active",
+        archived: false,
       },
     });
 
