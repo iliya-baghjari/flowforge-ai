@@ -1,27 +1,41 @@
+"use client";
+
+import * as React from "react";
+
+import { WorkspaceAdminPanel } from "@/components/workspace/workspace-admin-panel";
+import { WorkspaceSettingsForm } from "@/components/workspace/workspace-settings-form";
+import { useWorkspaceStore } from "@/store/workspace-store";
+
 export default function SettingsPage() {
+  const { currentWorkspaceId, workspaces } = useWorkspaceStore();
+  const workspace = workspaces.find((item) => item.id === currentWorkspaceId) ?? workspaces[0] ?? null;
+
+  if (!workspace || !currentWorkspaceId) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Workspace settings</h1>
+          <p className="text-muted-foreground mt-2">Create or select a workspace to manage settings.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-2">Manage your account and preferences</p>
+        <h1 className="text-3xl font-bold tracking-tight">Workspace settings</h1>
+        <p className="text-muted-foreground mt-2">Manage members, permissions, invites, and workspace details.</p>
       </div>
 
-      <div className="space-y-4 max-w-2xl">
-        <div className="rounded-lg border border-border/60 bg-card p-6">
-          <h3 className="font-semibold">Account Settings</h3>
-          <p className="text-sm text-muted-foreground mt-2">Configure your account preferences</p>
-        </div>
+      <WorkspaceSettingsForm
+        workspaceId={currentWorkspaceId}
+        initialName={workspace.name}
+        initialSlug={workspace.slug}
+        initialLogoUrl={workspace.logoUrl}
+      />
 
-        <div className="rounded-lg border border-border/60 bg-card p-6">
-          <h3 className="font-semibold">Notifications</h3>
-          <p className="text-sm text-muted-foreground mt-2">Manage notification preferences</p>
-        </div>
-
-        <div className="rounded-lg border border-border/60 bg-card p-6">
-          <h3 className="font-semibold">Privacy & Security</h3>
-          <p className="text-sm text-muted-foreground mt-2">Control your privacy settings</p>
-        </div>
-      </div>
+      <WorkspaceAdminPanel workspaceId={currentWorkspaceId} />
     </div>
   );
 }
