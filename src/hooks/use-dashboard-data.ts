@@ -72,8 +72,22 @@ export function useDashboardData() {
           fetch("/api/dashboard/deadlines"),
         ]);
 
-        if (!statsRes.ok || !activitiesRes.ok || !recentTasksRes.ok || !distributionRes.ok || !burndownRes.ok || !deadlinesRes.ok) {
-          throw new Error("Failed to fetch dashboard data");
+        const responses = [statsRes, activitiesRes, recentTasksRes, distributionRes, burndownRes, deadlinesRes];
+        const failedResponse = responses.find((response) => !response.ok);
+
+        if (failedResponse) {
+          let errorMessage = "Failed to fetch dashboard data";
+
+          try {
+            const errorBody = await failedResponse.json();
+            if (typeof errorBody?.error === "string") {
+              errorMessage = errorBody.error;
+            }
+          } catch {
+            // Ignore JSON parsing issues and keep the fallback message.
+          }
+
+          throw new Error(errorMessage);
         }
 
         const [statsData, activitiesData, recentTasksData, distributionData, burndownDataRes, deadlinesData] = await Promise.all([

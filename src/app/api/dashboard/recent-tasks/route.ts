@@ -4,6 +4,13 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        { error: "Database is not configured. Add DATABASE_URL to your environment." },
+        { status: 503 }
+      );
+    }
+
     const session = await auth();
 
     if (!session?.user?.email) {
