@@ -1,16 +1,40 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
-import { BurnDownChart } from "@/components/dashboard/burn-down-chart";
-import { TaskDistributionChart } from "@/components/dashboard/task-distribution-chart";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { RecentTasks } from "@/components/dashboard/recent-tasks";
 import { WorkspaceCreator } from "@/components/workspace/workspace-creator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+
+const BurnDownChart = dynamic(
+  () => import("@/components/dashboard/burn-down-chart").then((module) => module.BurnDownChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-xl border border-border/60 bg-card p-6">
+        <Skeleton className="h-75 w-full rounded-xl" />
+      </div>
+    ),
+  },
+);
+
+const TaskDistributionChart = dynamic(
+  () => import("@/components/dashboard/task-distribution-chart").then((module) => module.TaskDistributionChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-xl border border-border/60 bg-card p-6">
+        <Skeleton className="h-75 w-full rounded-xl" />
+      </div>
+    ),
+  },
+);
 
 export default function DashboardPage() {
   const { stats, activities, recentTasks, distribution, burndownData, deadlines, loading, error } = useDashboardData();

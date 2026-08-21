@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   PieChart,
   Pie,
@@ -23,7 +24,7 @@ const COLORS = {
   completed: "#10b981",
 };
 
-export function TaskDistributionChart({ data }: TaskDistributionChartProps) {
+export const TaskDistributionChart = React.memo(function TaskDistributionChart({ data }: TaskDistributionChartProps) {
   const getColor = (name: string) => {
     const statusMap: Record<string, string> = {
       Todo: COLORS.todo,
@@ -68,4 +69,4 @@ export function TaskDistributionChart({ data }: TaskDistributionChartProps) {
       </ResponsiveContainer>
     </div>
   );
-}
+});

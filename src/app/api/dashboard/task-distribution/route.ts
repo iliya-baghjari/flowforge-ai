@@ -46,7 +46,10 @@ export async function GET(): Promise<NextResponse> {
       );
     }
     // Get task distribution by status
-     const todoCount: number = await prisma.task.count({
+    const backlogCount: number = await prisma.task.count({
+      where: { userId: user.id, status: "backlog" },
+    });
+    const todoCount: number = await prisma.task.count({
       where: { userId: user.id, status: "todo" },
     });
     const inProgressCount: number = await prisma.task.count({
@@ -60,6 +63,7 @@ export async function GET(): Promise<NextResponse> {
     });
 
     const distribution = [
+      { name: "Backlog", value: backlogCount },
       { name: "Todo", value: todoCount },
       { name: "In Progress", value: inProgressCount },
       { name: "In Review", value: inReviewCount },

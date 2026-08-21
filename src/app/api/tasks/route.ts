@@ -4,9 +4,9 @@ import { canAccessWorkspace } from "@/lib/workspace-permissions";
 import { NextResponse } from "next/server";
 
 function normalizeTaskStatus(value: unknown) {
-  return typeof value === "string" && ["todo", "in_progress", "in_review", "completed"].includes(value)
+  return typeof value === "string" && ["backlog", "todo", "in_progress", "in_review", "completed"].includes(value)
     ? value
-    : "todo";
+    : "backlog";
 }
 
 function normalizeTaskPriority(value: unknown) {
@@ -88,6 +88,7 @@ export async function POST(request: Request) {
     const projectId = typeof body?.projectId === "string" ? body.projectId : null;
     const title = typeof body?.title === "string" ? body.title.trim() : "";
     const description = typeof body?.description === "string" ? body.description.trim() : null;
+    const label = typeof body?.label === "string" ? body.label.trim() || null : null;
     const status = normalizeTaskStatus(body?.status);
     const priority = normalizeTaskPriority(body?.priority);
     const dueDate = body?.dueDate ? new Date(body.dueDate) : null;
@@ -125,6 +126,7 @@ export async function POST(request: Request) {
       data: {
         title,
         description: description || null,
+        label,
         status,
         priority,
         dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null,

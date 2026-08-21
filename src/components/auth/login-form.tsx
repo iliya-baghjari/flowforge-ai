@@ -97,7 +97,7 @@ export const LoginForm: React.FC = () => {
           <button
             type="button"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? "Hide password visibility" : "Show password visibility"}
             onClick={() => setShowPassword((value) => !value)}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Check, ChevronDown, Plus, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ interface WorkspaceSwitcherProps {
   workspaces: WorkspaceSummary[];
 }
 
-export function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
+export const WorkspaceSwitcher = React.memo(function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
   const [open, setOpen] = React.useState(false);
   const { currentWorkspaceId, setCurrentWorkspaceId } = useWorkspaceStore();
 
@@ -26,9 +27,12 @@ export function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
         onClick={() => setOpen((value) => !value)}
       >
         {currentWorkspace?.logoUrl ? (
-          <img
+          <Image
             src={currentWorkspace.logoUrl}
             alt={currentWorkspace.name}
+            width={24}
+            height={24}
+            unoptimized
             className="h-6 w-6 rounded-md object-cover"
           />
         ) : (
@@ -73,9 +77,12 @@ export function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     {workspace.logoUrl ? (
-                      <img
+                      <Image
                         src={workspace.logoUrl}
                         alt={workspace.name}
+                        width={32}
+                        height={32}
+                        unoptimized
                         className="h-8 w-8 rounded-md object-cover"
                       />
                     ) : (
@@ -105,4 +112,4 @@ export function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
       )}
     </div>
   );
-}
+});

@@ -160,7 +160,8 @@ model Task {
   id          String       @id @default(cuid())
   title       String
   description String?
-  status      String       @default("todo") // todo, in_progress, in_review, completed
+  label       String?
+  status      String       @default("backlog") // backlog, todo, in_progress, in_review, completed
   priority    String       @default("medium") // low, medium, high, urgent
   dueDate     DateTime?
   projectId   String

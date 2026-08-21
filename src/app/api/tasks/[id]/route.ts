@@ -4,7 +4,7 @@ import { canAccessWorkspace } from "@/lib/workspace-permissions";
 import { NextResponse } from "next/server";
 
 function normalizeTaskStatus(value: unknown) {
-  return typeof value === "string" && ["todo", "in_progress", "in_review", "completed"].includes(value)
+  return typeof value === "string" && ["backlog", "todo", "in_progress", "in_review", "completed"].includes(value)
     ? value
     : null;
 }
@@ -94,6 +94,7 @@ export async function PATCH(
     const body = await request.json();
     const title = typeof body?.title === "string" ? body.title.trim() : undefined;
     const description = typeof body?.description === "string" ? body.description.trim() || null : undefined;
+    const label = typeof body?.label === "string" ? body.label.trim() || null : undefined;
     const status = normalizeTaskStatus(body?.status);
     const priority = normalizeTaskPriority(body?.priority);
     const dueDate = typeof body?.dueDate === "string" || body?.dueDate === null ? body.dueDate : undefined;
@@ -117,6 +118,7 @@ export async function PATCH(
       data: {
         ...(typeof title !== "undefined" ? { title } : {}),
         ...(typeof description !== "undefined" ? { description } : {}),
+        ...(typeof label !== "undefined" ? { label } : {}),
         ...(status ? { status } : {}),
         ...(priority ? { priority } : {}),
         ...(typeof dueDate !== "undefined" ? { dueDate: dueDate ? new Date(dueDate) : null } : {}),

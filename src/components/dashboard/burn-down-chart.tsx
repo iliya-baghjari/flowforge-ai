@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   LineChart,
   Line,
@@ -19,7 +20,7 @@ interface BurnDownChartProps {
   }>;
 }
 
-export function BurnDownChart({ data }: BurnDownChartProps) {
+export const BurnDownChart = React.memo(function BurnDownChart({ data }: BurnDownChartProps) {
   return (
     <div className="rounded-xl border border-border/60 bg-card p-6">
       <h2 className="mb-4 text-lg font-semibold text-foreground">
@@ -68,4 +69,4 @@ export function BurnDownChart({ data }: BurnDownChartProps) {
       </ResponsiveContainer>
     </div>
   );
-}
+});
