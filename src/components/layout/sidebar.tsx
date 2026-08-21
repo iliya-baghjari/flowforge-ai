@@ -11,6 +11,7 @@ import {
   CalendarDays,
   Settings,
   Sparkles,
+  Star,
   User,
 } from "lucide-react";
 
@@ -18,6 +19,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/sidebar-store";
 import { useWorkspaceStore } from "@/store/workspace-store";
+
+interface ProjectSidebarItem {
+  id: string;
+  name: string;
+  archived: boolean;
+  favorite: boolean;
+  color: string | null;
+  icon: string | null;
+}
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -35,7 +45,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const pathname = usePathname();
   const { isOpen, toggle } = useSidebarStore();
   const { currentWorkspaceId, workspaces } = useWorkspaceStore();
+  const [projects, setProjects] = React.useState<ProjectSidebarItem[]>([]);
   const activeWorkspace = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
+  const activeProjects = React.useMemo(
+    () =>
+      [...projects]
+        .filter((project) => !project.archived)
+        .sort((left, right) => Number(right.favorite) - Number(left.favorite) || left.name.localeCompare(right.name)),
+    [projects],
+  );
+
+  React.useEffect(() => {
+    if (!currentWorkspaceId) {
+      setProjects([]);
+      return;
+    }
+
+    const loadProjects = async () => {
+      try {
+        const response = await fetch(`/api/projects?workspaceId=${currentWorkspaceId}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        setProjects(Array.isArray(data.projects) ? data.projects : []);
+      } catch (error) {
+        console.error("Failed to load sidebar projects:", error);
+      }
+    };
+
+    loadProjects();
+  }, [currentWorkspaceId]);
 
   return (
     <aside
@@ -110,6 +148,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             );
           })}
         </nav>
+
+        {activeProjects.length > 0 && (
+          <div className="mt-5">
+            <div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Projects
+            </div>
+            <div className="space-y-1">
+              {activeProjects.map((project) => (
+                <Link
+                  key={project.id}
+                  href="/dashboard/projects"
+                  className={cn(
+                    "flex items-center justify-between rounded-lg px-2 py-2 text-sm transition-colors",
+                    pathname === "/dashboard/projects"
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-xs"
+                      style={{ backgroundColor: `${project.color ?? "#6366f1"}20`, color: project.color ?? "#6366f1" }}
+                    >
+                      {project.icon ?? "📁"}
+                    </div>
+                    <span className="truncate">{project.name}</span>
+                  </div>
+                  {project.favorite && <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

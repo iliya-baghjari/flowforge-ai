@@ -47,12 +47,18 @@ export async function PATCH(
     const description = typeof body?.description === "string" ? body.description.trim() || null : undefined;
     const status = typeof body?.status === "string" ? body.status : undefined;
     const archived = typeof body?.archived === "boolean" ? body.archived : undefined;
+    const favorite = typeof body?.favorite === "boolean" ? body.favorite : undefined;
+    const color = typeof body?.color === "string" ? body.color.trim() || "#6366f1" : undefined;
+    const icon = typeof body?.icon === "string" ? body.icon.trim() || "📁" : undefined;
 
     if (
       typeof name === "undefined" &&
       typeof description === "undefined" &&
       typeof status === "undefined" &&
-      typeof archived === "undefined"
+      typeof archived === "undefined" &&
+      typeof favorite === "undefined" &&
+      typeof color === "undefined" &&
+      typeof icon === "undefined"
     ) {
       return NextResponse.json({ error: "No updates supplied" }, { status: 400 });
     }
@@ -64,6 +70,9 @@ export async function PATCH(
         ...(typeof description !== "undefined" ? { description } : {}),
         ...(typeof status !== "undefined" ? { status } : {}),
         ...(typeof archived !== "undefined" ? { archived } : {}),
+        ...(typeof favorite !== "undefined" ? { favorite } : {}),
+        ...(typeof color !== "undefined" ? { color } : {}),
+        ...(typeof icon !== "undefined" ? { icon } : {}),
       },
     });
 

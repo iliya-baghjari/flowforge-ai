@@ -139,6 +139,9 @@ model Project {
   description String?
   status      String   @default("active") // active, completed, paused
   archived    Boolean  @default(false)
+  favorite    Boolean  @default(false)
+  color       String?  @default("#6366f1")
+  icon        String?  @default("📁")
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspaceId String
@@ -150,6 +153,7 @@ model Project {
   @@index([userId])
   @@index([workspaceId])
   @@index([archived])
+  @@index([favorite])
 }
 
 model Task {

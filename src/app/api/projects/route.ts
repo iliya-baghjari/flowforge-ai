@@ -70,6 +70,9 @@ export async function POST(request: Request) {
     const description = typeof body?.description === "string" ? body.description.trim() : null;
     const status = typeof body?.status === "string" ? body.status : "active";
     const archived = Boolean(body?.archived);
+    const favorite = Boolean(body?.favorite);
+    const color = typeof body?.color === "string" && body.color.trim() ? body.color.trim() : "#6366f1";
+    const icon = typeof body?.icon === "string" && body.icon.trim() ? body.icon.trim() : "📁";
 
     if (!workspaceId || !name) {
       return NextResponse.json({ error: "Workspace ID and project name are required" }, { status: 400 });
@@ -92,6 +95,9 @@ export async function POST(request: Request) {
         description: description || null,
         status,
         archived,
+        favorite,
+        color,
+        icon,
         userId: currentUser.id,
         workspaceId,
       },

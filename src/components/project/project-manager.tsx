@@ -21,6 +21,9 @@ interface ProjectRecord {
   description: string | null;
   status: string;
   archived: boolean;
+  favorite: boolean;
+  color: string | null;
+  icon: string | null;
   workspaceId: string;
   createdAt: string;
   updatedAt: string;
@@ -31,6 +34,9 @@ const defaultDraft = {
   description: "",
   status: "active",
   archived: false,
+  favorite: false,
+  color: "#6366f1",
+  icon: "📁",
 };
 
 export function ProjectManager() {
@@ -101,6 +107,9 @@ export function ProjectManager() {
         description: draft.description.trim() || null,
         status: draft.status,
         archived: draft.archived,
+        favorite: draft.favorite,
+        color: draft.color,
+        icon: draft.icon,
       };
 
       const response = editingId
@@ -141,6 +150,9 @@ export function ProjectManager() {
       description: project.description ?? "",
       status: project.status,
       archived: project.archived,
+      favorite: project.favorite,
+      color: project.color ?? "#6366f1",
+      icon: project.icon ?? "📁",
     });
   };
 
@@ -167,6 +179,9 @@ export function ProjectManager() {
                 ...project,
                 archived: data.archived,
                 status: data.status,
+                favorite: data.favorite,
+                color: data.color,
+                icon: data.icon,
                 updatedAt: data.updatedAt,
               }
             : project,
@@ -174,6 +189,44 @@ export function ProjectManager() {
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update project status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFavorite = async (projectId: string, favorite: boolean) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ favorite }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Failed to update project favorite state");
+      }
+
+      setProjects((current) =>
+        current.map((project) =>
+          project.id === projectId
+            ? {
+                ...project,
+                favorite: data.favorite,
+                archived: data.archived,
+                status: data.status,
+                color: data.color,
+                icon: data.icon,
+                updatedAt: data.updatedAt,
+              }
+            : project,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update project favorite state");
     } finally {
       setLoading(false);
     }
@@ -254,14 +307,45 @@ export function ProjectManager() {
           </div>
 
           <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Project icon</label>
+            <input
+              value={draft.icon}
+              onChange={(event) => setDraft((current) => ({ ...current, icon: event.target.value || "📁" }))}
+              className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              placeholder="📁"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Project color</label>
+            <input
+              type="color"
+              value={draft.color}
+              onChange={(event) => setDraft((current) => ({ ...current, color: event.target.value }))}
+              className="h-11 w-full rounded-lg border border-border/60 bg-background p-1"
+            />
+          </div>
+
+          <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Visibility</label>
-            <label className="flex h-10.5 items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-sm">
+            <label className="flex h-11 items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-sm">
               <input
                 type="checkbox"
                 checked={draft.archived}
                 onChange={(event) => setDraft((current) => ({ ...current, archived: event.target.checked }))}
               />
               Archive this project
+            </label>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <label className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-sm">
+              <input
+                type="checkbox"
+                checked={draft.favorite}
+                onChange={(event) => setDraft((current) => ({ ...current, favorite: event.target.checked }))}
+              />
+              Mark as favorite
             </label>
           </div>
         </div>
@@ -301,13 +385,24 @@ export function ProjectManager() {
               {activeProjects.map((project) => (
                 <div key={project.id} className="rounded-xl border border-border/60 bg-background/60 p-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-foreground">{project.name}</p>
-                      <p className="text-xs text-muted-foreground">{project.status}</p>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-sm"
+                        style={{ backgroundColor: `${project.color ?? "#6366f1"}20`, color: project.color ?? "#6366f1" }}
+                      >
+                        {project.icon ?? "📁"}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{project.name}</p>
+                        <p className="text-xs text-muted-foreground">{project.status}</p>
+                      </div>
                     </div>
-                    <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-700">
-                      Active
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {project.favorite && <span className="text-amber-500">★</span>}
+                      <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-700">
+                        Active
+                      </span>
+                    </div>
                   </div>
 
                   {project.description && (
@@ -322,6 +417,14 @@ export function ProjectManager() {
                     <Button size="sm" variant="outline" onClick={() => handleArchive(project.id, true)} className="gap-1">
                       <Archive className="h-3.5 w-3.5" />
                       Archive
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleFavorite(project.id, !project.favorite)}
+                      className="gap-1"
+                    >
+                      {project.favorite ? "★" : "☆"} Favorite
                     </Button>
                     <Button
                       size="sm"
@@ -354,13 +457,24 @@ export function ProjectManager() {
               {archivedProjects.map((project) => (
                 <div key={project.id} className="rounded-xl border border-border/60 bg-background/60 p-3 opacity-80">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-foreground">{project.name}</p>
-                      <p className="text-xs text-muted-foreground">{project.status}</p>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-sm"
+                        style={{ backgroundColor: `${project.color ?? "#6366f1"}20`, color: project.color ?? "#6366f1" }}
+                      >
+                        {project.icon ?? "📁"}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{project.name}</p>
+                        <p className="text-xs text-muted-foreground">{project.status}</p>
+                      </div>
                     </div>
-                    <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700">
-                      Archived
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {project.favorite && <span className="text-amber-500">★</span>}
+                      <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700">
+                        Archived
+                      </span>
+                    </div>
                   </div>
 
                   {project.description && (
@@ -375,6 +489,14 @@ export function ProjectManager() {
                     <Button size="sm" variant="outline" onClick={() => handleArchive(project.id, false)} className="gap-1">
                       <ArchiveRestore className="h-3.5 w-3.5" />
                       Restore
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleFavorite(project.id, !project.favorite)}
+                      className="gap-1"
+                    >
+                      {project.favorite ? "★" : "☆"} Favorite
                     </Button>
                     <Button
                       size="sm"
