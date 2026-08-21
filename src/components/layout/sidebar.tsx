@@ -12,6 +12,7 @@ import {
   Settings,
   Sparkles,
   Star,
+  CheckSquare,
   User,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ interface ProjectSidebarItem {
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
+  { href: "/dashboard/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/dashboard/profile", label: "Profile", icon: User },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },

@@ -36,7 +36,7 @@ export function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
             {currentWorkspace?.name?.[0]?.toUpperCase() ?? "W"}
           </div>
         )}
-        <span className="max-w-[140px] truncate text-sm font-medium">
+        <span className="max-w-35 truncate text-sm font-medium">
           {currentWorkspace?.name ?? "Workspace"}
         </span>
         <ChevronDown className="h-4 w-4 text-muted-foreground" />
