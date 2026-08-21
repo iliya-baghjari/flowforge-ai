@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Calendar, Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { Calendar, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { TaskKanbanBoard, type KanbanTask, type TaskStatus } from "@/components/task/task-kanban-board";
 import { useWorkspaceStore } from "@/store/workspace-store";
 
 interface TaskProject {
@@ -13,17 +14,7 @@ interface TaskProject {
   icon: string | null;
 }
 
-interface TaskRecord {
-  id: string;
-  title: string;
-  description: string | null;
-  status: "todo" | "in_progress" | "in_review" | "completed";
-  priority: "low" | "medium" | "high" | "urgent";
-  dueDate: string | null;
-  projectId: string;
-  project: TaskProject;
-  updatedAt: string;
-}
+interface TaskRecord extends KanbanTask {}
 
 const initialDraft = {
   title: "",
@@ -35,6 +26,7 @@ const initialDraft = {
 };
 
 const taskStatusOptions = [
+  { value: "backlog", label: "Backlog" },
   { value: "todo", label: "Todo" },
   { value: "in_progress", label: "In Progress" },
   { value: "in_review", label: "In Review" },
@@ -49,7 +41,8 @@ const taskPriorityOptions = [
 ] as const;
 
 const statusClasses: Record<TaskRecord["status"], string> = {
-  todo: "bg-slate-500/10 text-slate-600",
+  backlog: "bg-slate-500/10 text-slate-600",
+  todo: "bg-cyan-500/10 text-cyan-600",
   in_progress: "bg-blue-500/10 text-blue-600",
   in_review: "bg-amber-500/10 text-amber-600",
   completed: "bg-emerald-500/10 text-emerald-600",
@@ -217,6 +210,43 @@ export function TaskManager() {
     }
   };
 
+  const handleTaskStatusChange = async (taskId: string, status: TaskStatus) => {
+    const task = tasks.find((entry) => entry.id === taskId);
+    if (!task || task.status === status) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Failed to update task status");
+      }
+
+      setTasks((current) =>
+        current.map((entry) =>
+          entry.id === taskId
+            ? {
+                ...entry,
+                status,
+                updatedAt: data.updatedAt ?? new Date().toISOString(),
+              }
+            : entry,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update task status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!currentWorkspaceId) {
     return (
       <div className="rounded-2xl border border-border/60 bg-card p-6 text-sm text-muted-foreground shadow-sm">
@@ -337,8 +367,8 @@ export function TaskManager() {
       <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-lg font-semibold text-foreground">Task list</p>
-            <p className="text-sm text-muted-foreground">Manage task status, dates, and priorities.</p>
+            <p className="text-lg font-semibold text-foreground">Kanban board</p>
+            <p className="text-sm text-muted-foreground">Drag tasks across columns to update progress instantly.</p>
           </div>
         </div>
 
@@ -349,55 +379,7 @@ export function TaskManager() {
             No tasks yet for this workspace.
           </div>
         ) : (
-          <div className="space-y-3">
-            {tasks.map((task) => (
-              <div key={task.id} className="rounded-xl border border-border/60 bg-background/40 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-base font-semibold text-foreground">{task.title}</p>
-                      <span className={`rounded-full px-2 py-1 text-[11px] font-medium ${statusClasses[task.status]}`}>
-                        {taskStatusOptions.find((option) => option.value === task.status)?.label}
-                      </span>
-                      <span className={`rounded-full px-2 py-1 text-[11px] font-medium ${priorityClasses[task.priority]}`}>
-                        {taskPriorityOptions.find((option) => option.value === task.priority)?.label}
-                      </span>
-                    </div>
-
-                    {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
-
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <span
-                          className="inline-flex h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: task.project?.color ?? "#6366f1" }}
-                        />
-                        {task.project?.name ?? "Project"}
-                      </span>
-
-                      {task.dueDate && (
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5" />
-                          {new Date(task.dueDate).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(task)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDelete(task.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <TaskKanbanBoard tasks={tasks} onTaskStatusChange={handleTaskStatusChange} />
         )}
       </div>
     </div>

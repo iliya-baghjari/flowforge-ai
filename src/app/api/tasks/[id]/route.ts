@@ -4,7 +4,7 @@ import { canAccessWorkspace } from "@/lib/workspace-permissions";
 import { NextResponse } from "next/server";
 
 function normalizeTaskStatus(value: unknown) {
-  return typeof value === "string" && ["todo", "in_progress", "in_review", "completed"].includes(value)
+  return typeof value === "string" && ["backlog", "todo", "in_progress", "in_review", "completed"].includes(value)
     ? value
     : null;
 }
