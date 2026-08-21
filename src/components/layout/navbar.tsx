@@ -17,11 +17,21 @@ interface NavbarProps {
   className?: string;
 }
 
+interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  createdAt: string;
+}
+
 export const Navbar: React.FC<NavbarProps> = ({ className }) => {
   const { toggle } = useSidebarStore();
   const { data: session } = useSession();
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
-  const { setWorkspaces, workspaces } = useWorkspaceStore();
+  const [notificationsOpen, setNotificationsOpen] = React.useState(false);
+  const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
+  const { setWorkspaces, workspaces, currentWorkspaceId } = useWorkspaceStore();
 
   React.useEffect(() => {
     const loadWorkspaces = async () => {
@@ -37,6 +47,39 @@ export const Navbar: React.FC<NavbarProps> = ({ className }) => {
 
     loadWorkspaces();
   }, [setWorkspaces]);
+
+  React.useEffect(() => {
+    if (!currentWorkspaceId || typeof window === "undefined") return;
+
+    const storageKey = `flowforge:${currentWorkspaceId}:notifications`;
+    const channelName = `flowforge:notifications:${currentWorkspaceId}`;
+    const readStoredNotifications = () => {
+      const raw = window.localStorage.getItem(storageKey);
+      const next = raw ? (JSON.parse(raw) as NotificationItem[]) : [];
+      setNotifications(next.slice(0, 6));
+    };
+
+    const channel = "BroadcastChannel" in window ? new BroadcastChannel(channelName) : null;
+    const handleIncoming = (event: MessageEvent | Event) => {
+      const payload = event instanceof MessageEvent ? (event.data as NotificationItem | null) : (event as CustomEvent<NotificationItem>).detail ?? null;
+      if (!payload?.id) return;
+
+      const next = [payload, ...notifications].slice(0, 6);
+      setNotifications(next);
+      window.localStorage.setItem(storageKey, JSON.stringify(next));
+    };
+
+    readStoredNotifications();
+    window.addEventListener(channelName, handleIncoming as EventListener);
+    if (channel) {
+      channel.onmessage = (event) => handleIncoming(event);
+    }
+
+    return () => {
+      window.removeEventListener(channelName, handleIncoming as EventListener);
+      channel?.close();
+    };
+  }, [currentWorkspaceId, notifications]);
 
   const userInitial = session?.user?.name?.[0]?.toUpperCase() || "U";
 
@@ -83,9 +126,48 @@ export const Navbar: React.FC<NavbarProps> = ({ className }) => {
             <span className="text-sm text-muted-foreground">Search</span>
           </Button>
 
-          <Button variant="ghost" size="icon" aria-label="Notifications">
-            <Bell className="h-4 w-4" />
-          </Button>
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Notifications"
+              onClick={() => setNotificationsOpen((open) => !open)}
+            >
+              <Bell className="h-4 w-4" />
+            </Button>
+
+            {notificationsOpen && (
+              <div className="absolute right-0 top-12 w-80 rounded-xl border border-border/60 bg-card p-3 shadow-xl z-50">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">Notifications</p>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+                    Live
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {notifications.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-border/60 bg-background/60 px-3 py-4 text-sm text-muted-foreground">
+                      No activity yet.
+                    </p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div key={notification.id} className="rounded-xl border border-border/60 bg-background/70 p-3">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-foreground">{notification.title}</p>
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{notification.type}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{notification.message}</p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {new Date(notification.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           <ThemeToggle />
 

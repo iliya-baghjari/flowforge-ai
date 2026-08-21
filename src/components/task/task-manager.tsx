@@ -39,7 +39,54 @@ interface WorkspaceMember {
   } | null;
 }
 
+interface TaskComment {
+  id: string;
+  taskId: string;
+  userId: string;
+  author: string;
+  message: string;
+  createdAt: string;
+}
+
+interface PresenceEntry {
+  userId: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+  lastSeen: number;
+}
+
 const PAGE_SIZE = 6;
+
+function getWorkspaceStorageKey(workspaceId: string, suffix: string) {
+  return `flowforge:${workspaceId}:${suffix}`;
+}
+
+function publishRealtimeEvent(workspaceId: string | null, channel: string, payload: Record<string, unknown>) {
+  if (!workspaceId || typeof window === "undefined") return;
+
+  const channelName = `flowforge:${channel}:${workspaceId}`;
+
+  if ("BroadcastChannel" in window) {
+    const broadcast = new BroadcastChannel(channelName);
+    broadcast.postMessage(payload);
+    broadcast.close();
+  }
+
+  window.dispatchEvent(new CustomEvent(channelName, { detail: payload }));
+}
+
+function extractEventData<T>(event: MessageEvent | Event): T | null {
+  if (event instanceof MessageEvent) {
+    return (event.data ?? null) as T | null;
+  }
+
+  if ("detail" in event) {
+    return (event.detail as T | null) ?? null;
+  }
+
+  return null;
+}
 
 function useDebouncedValue<T>(value: T, delay = 250) {
   const [debouncedValue, setDebouncedValue] = React.useState(value);
@@ -112,9 +159,17 @@ export function TaskManager() {
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("desc");
   const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const [commentsByTask, setCommentsByTask] = React.useState<Record<string, TaskComment[]>>({});
+  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = React.useState("");
+  const [presence, setPresence] = React.useState<PresenceEntry[]>([]);
   const searchValue = useDebouncedValue(searchQuery, 250);
   const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
   const paletteInputRef = React.useRef<HTMLInputElement | null>(null);
+  const currentUserId = React.useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("flowforge-user-id");
+  }, [currentWorkspaceId]);
 
   const loadProjects = React.useCallback(async () => {
     if (!currentWorkspaceId) {
@@ -174,6 +229,155 @@ export function TaskManager() {
     loadTasks();
     loadMembers();
   }, [loadProjects, loadTasks, loadMembers]);
+
+  React.useEffect(() => {
+    if (!currentWorkspaceId) {
+      setCommentsByTask({});
+      return;
+    }
+
+    const storageKey = getWorkspaceStorageKey(currentWorkspaceId, "comments");
+    const saved = window.localStorage.getItem(storageKey);
+    setCommentsByTask(saved ? JSON.parse(saved) : {});
+  }, [currentWorkspaceId]);
+
+  React.useEffect(() => {
+    if (!currentWorkspaceId) return;
+
+    const channelName = `flowforge:comments:${currentWorkspaceId}`;
+    const channel = "BroadcastChannel" in window ? new BroadcastChannel(channelName) : null;
+
+    const handleIncomingMessage = (event: MessageEvent | Event) => {
+      const message = extractEventData<{ type?: string; data?: Record<string, TaskComment[]> }>(event);
+      if (!message || message.type !== "comments") return;
+
+      setCommentsByTask((current) => ({
+        ...current,
+        ...((message.data ?? {}) as Record<string, TaskComment[]>),
+      }));
+    };
+
+    window.addEventListener(channelName, handleIncomingMessage as EventListener);
+    if (channel) {
+      channel.onmessage = (event) => handleIncomingMessage(event);
+    }
+
+    return () => {
+      window.removeEventListener(channelName, handleIncomingMessage as EventListener);
+      channel?.close();
+    };
+  }, [currentWorkspaceId]);
+
+  React.useEffect(() => {
+    if (!currentWorkspaceId) return;
+
+    const storageKey = getWorkspaceStorageKey(currentWorkspaceId, "comments");
+    window.localStorage.setItem(storageKey, JSON.stringify(commentsByTask));
+  }, [commentsByTask, currentWorkspaceId]);
+
+  React.useEffect(() => {
+    if (!currentWorkspaceId) return;
+
+    const refreshTasks = () => {
+      void loadTasks();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) refreshTasks();
+    };
+
+    const timer = window.setInterval(refreshTasks, 30000);
+    window.addEventListener("focus", refreshTasks);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshTasks);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [currentWorkspaceId, loadTasks]);
+
+  React.useEffect(() => {
+    if (!currentWorkspaceId || !members.length) return;
+
+    const storageKey = getWorkspaceStorageKey(currentWorkspaceId, "presence");
+    const loadPresence = () => {
+      const stored = window.localStorage.getItem(storageKey);
+      const parsed: PresenceEntry[] = stored ? JSON.parse(stored) : [];
+      const now = Date.now();
+      const active = parsed.filter((entry) => now - entry.lastSeen < 30000);
+      setPresence(active);
+    };
+
+    const channelName = `flowforge:presence:${currentWorkspaceId}`;
+    const channel = "BroadcastChannel" in window ? new BroadcastChannel(channelName) : null;
+    const handlePresenceChange = (event: MessageEvent | Event) => {
+      const message = extractEventData<{ userId?: string; name?: string | null; email?: string | null; image?: string | null; lastSeen?: number }>(event);
+      if (!message?.userId) return;
+
+      const updated = [...(JSON.parse(window.localStorage.getItem(storageKey) ?? "[]") as PresenceEntry[])].filter((entry) => entry.userId !== message.userId);
+      updated.push({
+        userId: message.userId,
+        name: message.name ?? null,
+        email: message.email ?? null,
+        image: message.image ?? null,
+        lastSeen: message.lastSeen ?? Date.now(),
+      });
+      window.localStorage.setItem(storageKey, JSON.stringify(updated));
+      loadPresence();
+    };
+
+    loadPresence();
+    window.addEventListener(channelName, handlePresenceChange as EventListener);
+    if (channel) {
+      channel.onmessage = (event) => handlePresenceChange(event);
+    }
+
+    return () => {
+      window.removeEventListener(channelName, handlePresenceChange as EventListener);
+      channel?.close();
+    };
+  }, [currentWorkspaceId, members.length]);
+
+  React.useEffect(() => {
+    if (!currentWorkspaceId) return;
+
+    const sessionUser = members.find((member) => member.userId === currentUserId);
+    const myUser = sessionUser?.user ?? null;
+    const cacheKey = getWorkspaceStorageKey(currentWorkspaceId, "presence");
+    const heartbeat = () => {
+      const payload = {
+        userId: currentUserId ?? "anonymous",
+        name: myUser?.name ?? "You",
+        email: myUser?.email ?? null,
+        image: myUser?.image ?? null,
+        lastSeen: Date.now(),
+      };
+
+      window.localStorage.setItem(cacheKey, JSON.stringify([
+        ...JSON.parse(window.localStorage.getItem(cacheKey) ?? "[]").filter((entry: PresenceEntry) => entry.userId !== payload.userId),
+        payload,
+      ]));
+
+      publishRealtimeEvent(currentWorkspaceId, "presence", payload);
+    };
+
+    heartbeat();
+
+    const timer = window.setInterval(heartbeat, 15000);
+    window.addEventListener("focus", heartbeat);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) heartbeat();
+    });
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", heartbeat);
+      document.removeEventListener("visibilitychange", () => {
+        if (!document.hidden) heartbeat();
+      });
+    };
+  }, [currentUserId, currentWorkspaceId, members]);
 
   React.useEffect(() => {
     if (!projects.length) {
@@ -306,6 +510,19 @@ export function TaskManager() {
 
   const visibleTasks = filteredTasks.slice(0, visibleCount);
   const hasMore = visibleCount < filteredTasks.length;
+  const selectedTask = visibleTasks.find((task) => task.id === selectedTaskId) ?? visibleTasks[0] ?? null;
+  const activeComments = selectedTask ? commentsByTask[selectedTask.id] ?? [] : [];
+
+  React.useEffect(() => {
+    if (!selectedTask && visibleTasks.length > 0) {
+      setSelectedTaskId(visibleTasks[0].id);
+      return;
+    }
+
+    if (selectedTask && !visibleTasks.some((task) => task.id === selectedTaskId)) {
+      setSelectedTaskId(visibleTasks[0]?.id ?? null);
+    }
+  }, [selectedTask, selectedTaskId, visibleTasks]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -373,6 +590,15 @@ export function TaskManager() {
         throw new Error(data?.error ?? "Failed to save task");
       }
 
+      const nextAction = editingId ? "updated" : "created";
+      publishRealtimeEvent(currentWorkspaceId, "notifications", {
+        id: crypto.randomUUID(),
+        type: "task",
+        title: `Task ${nextAction}`,
+        message: `${cleanTitle} was ${nextAction}.`,
+        createdAt: new Date().toISOString(),
+      });
+
       resetForm();
       await loadTasks();
     } catch (err) {
@@ -405,6 +631,16 @@ export function TaskManager() {
       if (!response.ok) {
         throw new Error(data?.error ?? "Failed to delete task");
       }
+
+      const deletedTask = tasks.find((task) => task.id === taskId);
+      publishRealtimeEvent(currentWorkspaceId, "notifications", {
+        id: crypto.randomUUID(),
+        type: "task",
+        title: "Task removed",
+        message: deletedTask ? `${deletedTask.title} was deleted.` : "A task was removed.",
+        createdAt: new Date().toISOString(),
+      });
+
       await loadTasks();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete task");
@@ -443,11 +679,44 @@ export function TaskManager() {
             : entry,
         ),
       );
+
+      publishRealtimeEvent(currentWorkspaceId, "notifications", {
+        id: crypto.randomUUID(),
+        type: "task",
+        title: "Status updated",
+        message: `${task.title} moved to ${status.replace("_", " ")}.`,
+        createdAt: new Date().toISOString(),
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update task status");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddComment = () => {
+    if (!selectedTask || !commentDraft.trim()) return;
+
+    const newComment: TaskComment = {
+      id: crypto.randomUUID(),
+      taskId: selectedTask.id,
+      userId: currentUserId ?? "local-user",
+      author: members.find((member) => member.userId === currentUserId)?.user?.name ?? "You",
+      message: commentDraft.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setCommentsByTask((current) => {
+      const next = {
+        ...current,
+        [selectedTask.id]: [...(current[selectedTask.id] ?? []), newComment],
+      };
+
+      publishRealtimeEvent(currentWorkspaceId, "comments", { type: "comments", data: next });
+      return next;
+    });
+
+    setCommentDraft("");
   };
 
   if (!currentWorkspaceId) {
@@ -475,11 +744,29 @@ export function TaskManager() {
                   <p className="text-xs text-muted-foreground">Keep work moving and deadlines visible.</p>
                 </div>
               </div>
-              {editingId && (
-                <Button variant="outline" size="sm" onClick={resetForm}>
-                  Cancel
-                </Button>
-              )}
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background px-2 py-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    Online
+                  </span>
+                  <div className="flex -space-x-2">
+                    {presence.slice(0, 4).map((entry) => (
+                      <div key={entry.userId} className="relative">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-linear-to-br from-primary to-violet-600 text-[10px] font-semibold text-white">
+                          {(entry.name ?? entry.email ?? "U").charAt(0).toUpperCase()}
+                        </div>
+                        <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {editingId && (
+                  <Button variant="outline" size="sm" onClick={resetForm}>
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </div>
 
             {error && <p className="mb-4 rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-600">{error}</p>}
@@ -741,6 +1028,73 @@ export function TaskManager() {
                   )}
                 </div>
               </>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Live comments</p>
+                <p className="text-xs text-muted-foreground">Instant team updates without page refresh.</p>
+              </div>
+              {selectedTask && (
+                <span className="rounded-full border border-border/60 bg-background px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  {selectedTask.title}
+                </span>
+              )}
+            </div>
+
+            {selectedTask ? (
+              <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
+                <div className="space-y-2">
+                  {visibleTasks.map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => setSelectedTaskId(task.id)}
+                      className={[
+                        "w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors",
+                        selectedTask.id === task.id
+                          ? "border-primary/40 bg-primary/5 text-foreground"
+                          : "border-border/60 bg-background text-muted-foreground hover:bg-accent",
+                      ].join(" ")}
+                    >
+                      {task.title}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="max-h-52 space-y-3 overflow-y-auto pr-1">
+                    {(activeComments.length
+                      ? activeComments
+                      : [{ id: "empty", author: "System", message: "No comments yet. Start the conversation.", createdAt: new Date().toISOString() }]
+                    ).map((comment) => (
+                      <div key={comment.id} className="rounded-xl border border-border/60 bg-background/70 p-3">
+                        <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                          <span className="font-semibold text-foreground">{comment.author}</span>
+                          <span>{new Date(comment.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                        </div>
+                        <p className="text-sm text-foreground">{comment.message}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      value={commentDraft}
+                      onChange={(event) => setCommentDraft(event.target.value)}
+                      placeholder="Add a quick update..."
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <Button size="sm" onClick={handleAddComment} disabled={!commentDraft.trim()}>
+                      Send
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Create or select a task to start live updates.</p>
             )}
           </div>
 
