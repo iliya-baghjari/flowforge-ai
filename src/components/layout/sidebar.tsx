@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -43,7 +44,7 @@ interface SidebarProps {
   className?: string;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
+export const Sidebar = React.memo<SidebarProps>(({ className }) => {
   const pathname = usePathname();
   const { isOpen, toggle } = useSidebarStore();
   const { currentWorkspaceId, workspaces } = useWorkspaceStore();
@@ -108,9 +109,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               {activeWorkspace?.logoUrl ? (
-                <img
+                <Image
                   src={activeWorkspace.logoUrl}
                   alt={activeWorkspace.name}
+                  width={28}
+                  height={28}
+                  unoptimized
                   className="h-7 w-7 rounded-md object-cover"
                 />
               ) : (
@@ -186,4 +190,4 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       </div>
     </aside>
   );
-};
+});

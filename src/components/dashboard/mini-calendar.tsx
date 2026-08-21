@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -13,7 +14,7 @@ interface MiniCalendarProps {
   deadlines: CalendarDeadline[];
 }
 
-export function MiniCalendar({ deadlines }: MiniCalendarProps) {
+export const MiniCalendar = React.memo(function MiniCalendar({ deadlines }: MiniCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const daysInMonth = (date: Date) => {
@@ -36,17 +37,17 @@ export function MiniCalendar({ deadlines }: MiniCalendarProps) {
     return map;
   }, [deadlines]);
 
-  const previousMonth = () => {
+  const previousMonth = React.useCallback(() => {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
     );
-  };
+  }, [currentDate]);
 
-  const nextMonth = () => {
+  const nextMonth = React.useCallback(() => {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
     );
-  };
+  }, [currentDate]);
 
   const monthName = currentDate.toLocaleDateString("en-US", {
     month: "long",
@@ -197,4 +198,4 @@ export function MiniCalendar({ deadlines }: MiniCalendarProps) {
       </div>
     </div>
   );
-}
+});
