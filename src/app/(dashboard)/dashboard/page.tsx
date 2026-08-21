@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
@@ -40,10 +41,12 @@ export default function DashboardPage() {
               Track your projects, tasks, and progress all in one place. Stay on top of deadlines and celebrate completed work.
             </p>
           </div>
-          <Button className="w-fit">
-            New Project
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+          <Link href="/dashboard/projects" className="w-fit">
+            <Button className="w-fit">
+              New Project
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </section>
 

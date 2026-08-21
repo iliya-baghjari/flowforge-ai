@@ -96,6 +96,12 @@ export async function POST(request: Request) {
         slug,
         logoUrl,
         userId: user.id,
+        members: {
+          create: {
+            userId: user.id,
+            role: "admin",
+          },
+        },
       },
       select: {
         id: true,
