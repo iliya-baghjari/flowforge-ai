@@ -94,6 +94,7 @@ export async function PATCH(
     const body = await request.json();
     const title = typeof body?.title === "string" ? body.title.trim() : undefined;
     const description = typeof body?.description === "string" ? body.description.trim() || null : undefined;
+    const label = typeof body?.label === "string" ? body.label.trim() || null : undefined;
     const status = normalizeTaskStatus(body?.status);
     const priority = normalizeTaskPriority(body?.priority);
     const dueDate = typeof body?.dueDate === "string" || body?.dueDate === null ? body.dueDate : undefined;
@@ -117,6 +118,7 @@ export async function PATCH(
       data: {
         ...(typeof title !== "undefined" ? { title } : {}),
         ...(typeof description !== "undefined" ? { description } : {}),
+        ...(typeof label !== "undefined" ? { label } : {}),
         ...(status ? { status } : {}),
         ...(priority ? { priority } : {}),
         ...(typeof dueDate !== "undefined" ? { dueDate: dueDate ? new Date(dueDate) : null } : {}),
