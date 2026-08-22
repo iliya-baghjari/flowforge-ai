@@ -16,7 +16,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ children, classN
   const { isOpen } = useSidebarStore();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.08),transparent_35%)]">
       <Navbar />
       <Sidebar />
       <main

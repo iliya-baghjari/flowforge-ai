@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Check, ChevronDown, Plus, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { WorkspaceCreator } from "@/components/workspace/workspace-creator";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore, type WorkspaceSummary } from "@/store/workspace-store";
 
@@ -14,10 +15,17 @@ interface WorkspaceSwitcherProps {
 
 export const WorkspaceSwitcher = React.memo(function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
   const [open, setOpen] = React.useState(false);
+  const [showCreator, setShowCreator] = React.useState(false);
   const { currentWorkspaceId, setCurrentWorkspaceId } = useWorkspaceStore();
 
   const currentWorkspace =
     workspaces.find((workspace) => workspace.id === currentWorkspaceId) ?? workspaces[0] ?? null;
+
+  const handleCreateWorkspace = (workspace: WorkspaceSummary) => {
+    setCurrentWorkspaceId(workspace.id);
+    setShowCreator(false);
+    setOpen(false);
+  };
 
   return (
     <div className="relative">
@@ -52,11 +60,23 @@ export const WorkspaceSwitcher = React.memo(function WorkspaceSwitcher({ workspa
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Workspaces
             </p>
-            <Button variant="ghost" size="sm" className="h-8 gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1"
+              onClick={() => setShowCreator((value) => !value)}
+            >
               <Plus className="h-3.5 w-3.5" />
               New
             </Button>
           </div>
+
+          {showCreator ? (
+            <div className="mb-3 rounded-xl border border-border/60 bg-background/60 p-2">
+              <WorkspaceCreator onCreated={handleCreateWorkspace} />
+            </div>
+          ) : null}
 
           <div className="space-y-1">
             {workspaces.map((workspace) => {

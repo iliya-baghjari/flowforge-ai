@@ -6,6 +6,8 @@ import { Calendar, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIAssistantPanel } from "@/components/ai/ai-assistant-panel";
 import { TaskKanbanBoard, type KanbanTask, type TaskStatus } from "@/components/task/task-kanban-board";
+import { ShortcutHelp } from "@/components/ui/shortcut-help";
+import { matchesShortcutKey } from "@/lib/shortcuts";
 import { useWorkspaceStore } from "@/store/workspace-store";
 
 interface TaskProject {
@@ -159,6 +161,7 @@ export function TaskManager() {
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("desc");
   const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const [shortcutHelpOpen, setShortcutHelpOpen] = React.useState(false);
   const [commentsByTask, setCommentsByTask] = React.useState<Record<string, TaskComment[]>>({});
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [commentDraft, setCommentDraft] = React.useState("");
@@ -398,13 +401,30 @@ export function TaskManager() {
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
+
       if ((event.metaKey || event.ctrlKey) && key === "k") {
         event.preventDefault();
         setPaletteOpen((open) => !open);
+        setShortcutHelpOpen(false);
+        return;
+      }
+
+      if (matchesShortcutKey(event, "n")) {
+        event.preventDefault();
+        setPaletteOpen(true);
+        setShortcutHelpOpen(false);
+        return;
+      }
+
+      if (event.key === "?" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        setShortcutHelpOpen((open) => !open);
+        return;
       }
 
       if (event.key === "Escape") {
         setPaletteOpen(false);
+        setShortcutHelpOpen(false);
       }
     };
 
@@ -885,6 +905,13 @@ export function TaskManager() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setShortcutHelpOpen(true)}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground"
+                  >
+                    Shortcuts
+                  </button>
+                  <button
+                    type="button"
                     onClick={resetFilters}
                     className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground"
                   >
@@ -1142,6 +1169,8 @@ export function TaskManager() {
               </div>
             </div>
           )}
+
+          <ShortcutHelp open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} />
         </div>
 
         <AIAssistantPanel workspaceId={currentWorkspaceId} tasks={tasks} projects={projects} members={members} />
