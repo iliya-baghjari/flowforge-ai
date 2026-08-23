@@ -56,6 +56,14 @@ export async function GET(request: Request) {
       },
       include: {
         project: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
       },
       orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
     });
