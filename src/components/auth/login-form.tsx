@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,10 +12,12 @@ import { Button } from "@/components/ui/button";
 import { loginSchema, type LoginFormValues } from "@/lib/schemas";
 import { cn } from "@/lib/utils";
 
-export const LoginForm: React.FC = () => {
+interface LoginFormProps {
+  callbackUrl?: string;
+}
+
+export const LoginForm: React.FC<LoginFormProps> = ({ callbackUrl = "/dashboard" }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState("");
   const {

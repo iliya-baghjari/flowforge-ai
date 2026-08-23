@@ -401,17 +401,26 @@ export function TaskManager() {
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
+      const activeElement = document.activeElement as HTMLElement | null;
+      const isTypingTarget =
+        activeElement && (
+          activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.tagName === "SELECT" ||
+          activeElement.isContentEditable
+        );
+
+      if (isTypingTarget) {
+        if (event.key === "Escape") {
+          setPaletteOpen(false);
+          setShortcutHelpOpen(false);
+        }
+        return;
+      }
 
       if ((event.metaKey || event.ctrlKey) && key === "k") {
         event.preventDefault();
         setPaletteOpen((open) => !open);
-        setShortcutHelpOpen(false);
-        return;
-      }
-
-      if (matchesShortcutKey(event, "n")) {
-        event.preventDefault();
-        setPaletteOpen(true);
         setShortcutHelpOpen(false);
         return;
       }
@@ -930,11 +939,11 @@ export function TaskManager() {
                   />
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-5">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                   <select
                     value={statusFilter}
                     onChange={(event) => setStatusFilter(event.target.value as "all" | TaskRecord["status"])}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="min-w-0 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
                     <option value="all">All statuses</option>
                     {taskStatusOptions.map((option) => (
@@ -947,7 +956,7 @@ export function TaskManager() {
                   <select
                     value={priorityFilter}
                     onChange={(event) => setPriorityFilter(event.target.value as "all" | TaskRecord["priority"])}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="min-w-0 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
                     <option value="all">All priorities</option>
                     {taskPriorityOptions.map((option) => (
@@ -960,7 +969,7 @@ export function TaskManager() {
                   <select
                     value={assigneeFilter}
                     onChange={(event) => setAssigneeFilter(event.target.value)}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="min-w-0 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
                     <option value="all">All assignees</option>
                     {members.map((member) => (
@@ -973,7 +982,7 @@ export function TaskManager() {
                   <select
                     value={labelFilter}
                     onChange={(event) => setLabelFilter(event.target.value)}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="min-w-0 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
                     <option value="all">All labels</option>
                     {Array.from(new Set(tasks.map((task) => task.label).filter(Boolean))).map((label) => (
@@ -983,19 +992,19 @@ export function TaskManager() {
                     ))}
                   </select>
 
-                  <div className="flex gap-2">
+                  <div className="grid min-w-0 grid-cols-2 gap-2">
                     <input
                       type="date"
                       value={dueDateFrom}
                       onChange={(event) => setDueDateFrom(event.target.value)}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                      className="min-w-0 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                       aria-label="Due date from"
                     />
                     <input
                       type="date"
                       value={dueDateTo}
                       onChange={(event) => setDueDateTo(event.target.value)}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                      className="min-w-0 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                       aria-label="Due date to"
                     />
                   </div>
@@ -1003,7 +1012,7 @@ export function TaskManager() {
                   <select
                     value={sortBy}
                     onChange={(event) => setSortBy(event.target.value as "created_at" | "due_date" | "priority" | "alphabetical")}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="min-w-0 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
                     <option value="created_at">Sort: created</option>
                     <option value="due_date">Sort: due date</option>
@@ -1014,7 +1023,7 @@ export function TaskManager() {
                   <select
                     value={sortDirection}
                     onChange={(event) => setSortDirection(event.target.value as "asc" | "desc")}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="min-w-0 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   >
                     <option value="desc">Descending</option>
                     <option value="asc">Ascending</option>

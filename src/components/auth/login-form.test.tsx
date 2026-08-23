@@ -31,7 +31,7 @@ describe("LoginForm", () => {
     const user = userEvent.setup();
     signIn.mockResolvedValue({ ok: true, error: null, status: 200, url: null });
 
-    render(<LoginForm />);
+    render(<LoginForm callbackUrl="/dashboard" />);
 
     await user.type(screen.getByLabelText("Email"), "user@example.com");
     await user.type(screen.getByLabelText("Password"), "password123");
@@ -44,5 +44,24 @@ describe("LoginForm", () => {
       callbackUrl: "/dashboard",
     });
     expect(push).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("uses the page-provided callbackUrl when present", async () => {
+    const user = userEvent.setup();
+    signIn.mockResolvedValue({ ok: true, error: null, status: 200, url: null });
+
+    render(<LoginForm callbackUrl="/projects" />);
+
+    await user.type(screen.getByLabelText("Email"), "owner@example.com");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    expect(signIn).toHaveBeenCalledWith("credentials", {
+      email: "owner@example.com",
+      password: "password123",
+      redirect: false,
+      callbackUrl: "/projects",
+    });
+    expect(push).toHaveBeenCalledWith("/projects");
   });
 });
