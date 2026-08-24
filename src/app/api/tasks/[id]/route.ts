@@ -124,7 +124,17 @@ export async function PATCH(
         ...(typeof dueDate !== "undefined" ? { dueDate: dueDate ? new Date(dueDate) : null } : {}),
         ...(typeof projectId !== "undefined" ? { projectId: projectId || task.projectId } : {}),
       },
-      include: { project: true },
+      include: {
+        project: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+      },
     });
 
     await prisma.activityLog.create({

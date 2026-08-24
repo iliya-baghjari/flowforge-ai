@@ -1,5 +1,6 @@
-"use client"; // ✅ This makes it a Client Component
+"use client";
 
+import type { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 
 export default function AuthProvider({
@@ -7,7 +8,16 @@ export default function AuthProvider({
   session,
 }: {
   children: React.ReactNode;
-  session: any; // or use the Session type from next-auth
+  session: Session | null;
 }) {
-  return <SessionProvider session={session}>{children}</SessionProvider>;
+  return (
+    <SessionProvider
+      session={session ?? undefined}
+      refetchOnWindowFocus={false}
+      refetchWhenOffline={false}
+      refetchInterval={0}
+    >
+      {children}
+    </SessionProvider>
+  );
 }
