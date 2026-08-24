@@ -56,20 +56,20 @@ export const SummaryCards = React.memo(function SummaryCards({
   );
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
           <div
             key={card.title}
-            className={`rounded-xl border ${card.bgColor} bg-card p-6 shadow-sm transition-all hover:shadow-md`}
+            className={`min-w-0 rounded-xl border ${card.bgColor} bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-5`}
           >
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-muted-foreground">
                   {card.title}
                 </p>
-                <p className="mt-2 text-3xl font-bold text-foreground">
+                <p className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                   {card.value}
                 </p>
                 {card.subtitle && (
@@ -78,8 +78,8 @@ export const SummaryCards = React.memo(function SummaryCards({
                   </p>
                 )}
               </div>
-              <div className={`${card.color} rounded-lg p-3`}>
-                <Icon className="h-6 w-6" />
+              <div className={`${card.color} shrink-0 rounded-lg p-3`}>
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
             </div>
           </div>

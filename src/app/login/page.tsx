@@ -8,7 +8,14 @@ export const metadata: Metadata = {
   description: "Access your FlowForge AI workspace, projects, and team activity.",
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ callbackUrl?: string }> | { callbackUrl?: string };
+}) {
+  const params = await Promise.resolve(searchParams ?? {});
+  const callbackUrl = params.callbackUrl ?? "/dashboard";
+
   return (
     <AuthShell
       title="Sign in"
@@ -17,7 +24,7 @@ export default function LoginPage() {
       footerLinkHref="/register"
       footerLinkLabel="Create an account"
     >
-      <LoginForm />
+      <LoginForm callbackUrl={callbackUrl} />
     </AuthShell>
   );
 }

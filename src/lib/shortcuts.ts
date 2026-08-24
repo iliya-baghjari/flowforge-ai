@@ -2,7 +2,6 @@ export type ShortcutContext = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" 
 
 export const shortcutHelpEntries = [
   { key: "?", description: "Open shortcuts help" },
-  { key: "n", description: "Open the task manager" },
   { key: "Esc", description: "Close overlays" },
 ];
 

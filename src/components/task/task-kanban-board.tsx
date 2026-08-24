@@ -238,7 +238,7 @@ export function TaskKanbanBoard({ tasks, onTaskStatusChange }: TaskKanbanBoardPr
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="grid gap-4 xl:grid-cols-5">
+      <div className="grid gap-4 xl:grid-cols-3">
         {columns.map((column) => (
           <TaskColumn key={column.id} column={column} tasks={column.tasks} />
         ))}

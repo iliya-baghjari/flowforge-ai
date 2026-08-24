@@ -12,6 +12,14 @@ import { authConfig } from "./auth.config";
 const DEMO_EMAIL = "admin@flowforge.ai";
 const DEMO_PASSWORD = "Admin123!";
 
+const DEMO_USER = {
+  id: "demo-user",
+  name: "Admin User",
+  email: DEMO_EMAIL,
+  image: null,
+  emailVerified: new Date(),
+};
+
 async function ensureDemoUser() {
   const existingUser = await prisma.user.findUnique({
     where: { email: DEMO_EMAIL },
@@ -29,6 +37,59 @@ async function ensureDemoUser() {
       emailVerified: new Date(),
     },
   });
+}
+
+export async function authenticateCredentials({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}) {
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+  const normalizedPassword = String(password ?? "");
+
+  if (normalizedEmail === DEMO_EMAIL && normalizedPassword === DEMO_PASSWORD) {
+    return DEMO_USER;
+  }
+
+  if (!normalizedEmail || !normalizedPassword) {
+    throw new Error("Email and password are required.");
+  }
+
+  try {
+    let user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!user && normalizedEmail === DEMO_EMAIL && normalizedPassword === DEMO_PASSWORD) {
+      user = await ensureDemoUser();
+    }
+
+    if (!user || !user.password) {
+      throw new Error("Invalid email or password.");
+    }
+
+    const isValid = await bcrypt.compare(normalizedPassword, user.password);
+
+    if (!isValid) {
+      throw new Error("Invalid email or password.");
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      emailVerified: user.emailVerified,
+    };
+  } catch (error) {
+    if (normalizedEmail === DEMO_EMAIL && normalizedPassword === DEMO_PASSWORD) {
+      return DEMO_USER;
+    }
+
+    throw error instanceof Error ? error : new Error("Invalid email or password.");
+  }
 }
 
 declare module "next-auth" {
@@ -56,38 +117,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password are required.");
-        }
-
-        const email = String(credentials.email).trim().toLowerCase();
-        const password = String(credentials.password);
-
-        let user = await prisma.user.findUnique({
-          where: { email },
+        return authenticateCredentials({
+          email: String(credentials?.email ?? ""),
+          password: String(credentials?.password ?? ""),
         });
-
-        if (!user && email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-          user = await ensureDemoUser();
-        }
-
-        if (!user || !user.password) {
-          throw new Error("Invalid email or password.");
-        }
-
-        const isValid = await bcrypt.compare(password, user.password);
-
-        if (!isValid) {
-          throw new Error("Invalid email or password.");
-        }
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          emailVerified: user.emailVerified,
-        };
       },
     }),
     Google({
