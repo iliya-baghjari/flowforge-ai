@@ -16,10 +16,32 @@ interface WorkspaceSwitcherProps {
 export const WorkspaceSwitcher = React.memo(function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
   const [open, setOpen] = React.useState(false);
   const [showCreator, setShowCreator] = React.useState(false);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
   const { currentWorkspaceId, setCurrentWorkspaceId } = useWorkspaceStore();
 
   const currentWorkspace =
     workspaces.find((workspace) => workspace.id === currentWorkspaceId) ?? workspaces[0] ?? null;
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      if (!wrapperRef.current?.contains(target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown, { passive: true });
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [open]);
 
   const handleCreateWorkspace = (workspace: WorkspaceSummary) => {
     setCurrentWorkspaceId(workspace.id);
@@ -28,11 +50,13 @@ export const WorkspaceSwitcher = React.memo(function WorkspaceSwitcher({ workspa
   };
 
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       <Button
         variant="outline"
         className="flex items-center gap-2 rounded-full px-3 py-2"
         onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-haspopup="menu"
       >
         {currentWorkspace?.logoUrl ? (
           <Image

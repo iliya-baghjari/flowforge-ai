@@ -22,4 +22,28 @@ describe("WorkspaceSwitcher", () => {
 
     expect(screen.getByRole("heading", { name: /create workspace/i })).toBeInTheDocument();
   });
+
+  it("closes when clicking outside the workspace menu", async () => {
+    useWorkspaceStore.setState({
+      workspaces: [
+        { id: "ws-1", name: "Northstar Labs", slug: "northstar-labs", logoUrl: null },
+      ],
+      currentWorkspaceId: "ws-1",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <div>
+        <button type="button">Outside</button>
+        <WorkspaceSwitcher workspaces={[{ id: "ws-1", name: "Northstar Labs", slug: "northstar-labs", logoUrl: null }]} />
+      </div>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /northstar labs/i }));
+    expect(screen.getByText(/workspace switch is saved in your browser/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /outside/i }));
+
+    expect(screen.queryByText(/workspace switch is saved in your browser/i)).not.toBeInTheDocument();
+  });
 });
