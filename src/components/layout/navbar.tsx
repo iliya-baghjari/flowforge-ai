@@ -53,11 +53,35 @@ export const Navbar: React.FC<NavbarProps> = ({ className }) => {
   const [notifications, setNotifications] = React.useState<NotificationItem[]>(
     []
   );
+  const profileMenuRef = React.useRef<HTMLDivElement>(null);
   const setWorkspaces = useWorkspaceStore((state) => state.setWorkspaces);
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const currentWorkspaceId = useWorkspaceStore(
     (state) => state.currentWorkspaceId
   );
+
+  React.useEffect(() => {
+    if (!dropdownOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      if (!profileMenuRef.current?.contains(target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown, {
+      passive: true,
+    });
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [dropdownOpen]);
 
   React.useEffect(() => {
     let isActive = true;
@@ -239,9 +263,13 @@ export const Navbar: React.FC<NavbarProps> = ({ className }) => {
 
           <ThemeToggle />
 
-          <div className="relative">
+          <div ref={profileMenuRef} className="relative">
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
+              type="button"
+              onClick={() => setDropdownOpen((open) => !open)}
+              aria-label="User menu"
+              aria-expanded={dropdownOpen}
+              aria-haspopup="menu"
               className="ml-1 flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-2 py-1.5 hover:bg-card/80 transition-colors"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-primary to-violet-600 text-sm font-semibold text-white">

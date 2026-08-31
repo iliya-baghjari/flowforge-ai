@@ -1,5 +1,84 @@
 import crypto from "crypto";
+import nodemailer from "nodemailer";
+
 import { prisma } from "@/lib/prisma";
+
+function getBaseUrl() {
+  return (
+    process.env.NEXTAUTH_URL ??
+    process.env.AUTH_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.APP_URL ??
+    "http://localhost:3000"
+  ).replace(/\/$/, "");
+}
+
+function getSmtpTransport() {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const password = process.env.SMTP_PASSWORD;
+
+  if (!host || !user || !password) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "SMTP configuration is missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM before sending emails."
+      );
+    }
+
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port: Number(process.env.SMTP_PORT ?? "587"),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: {
+      user,
+      pass: password,
+    },
+  });
+}
+
+async function sendAuthEmail({
+  email,
+  token,
+  subject,
+  path,
+  title,
+}: {
+  email: string;
+  token: string;
+  subject: string;
+  path: string;
+  title: string;
+}) {
+  const url = `${getBaseUrl()}/${path}?token=${token}`;
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@localhost";
+  const transporter = getSmtpTransport();
+
+  if (!transporter) {
+    console.warn(
+      `Email delivery is not configured. ${title} link for ${email}: ${url}`
+    );
+    return true;
+  }
+
+  await transporter.sendMail({
+    from,
+    to: email,
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
+        <p>Hello,</p>
+        <p>Click the link below to ${title.toLowerCase()}:</p>
+        <p><a href="${url}">${url}</a></p>
+        <p>If you did not request this, you can ignore this email.</p>
+      </div>
+    `,
+  });
+
+  return true;
+}
 
 export async function generateVerificationToken(email: string) {
   const token = crypto.randomBytes(32).toString("hex");
@@ -101,39 +180,22 @@ export async function deleteToken(token: string, type: "verification" | "reset")
   }
 }
 
-// Email sending utility (using environment variables for SMTP or similar service)
 export async function sendVerificationEmail(email: string, token: string) {
-  const verifyUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
-
-  // Mock implementation - Replace with actual email service
-  console.log(`Verification email would be sent to ${email}: ${verifyUrl}`);
-
-  // Example using nodemailer (uncomment if installed):
-  // const transporter = nodemailer.createTransport({
-  //   host: process.env.SMTP_HOST,
-  //   port: parseInt(process.env.SMTP_PORT || "587"),
-  //   secure: process.env.SMTP_SECURE === "true",
-  //   auth: {
-  //     user: process.env.SMTP_USER,
-  //     pass: process.env.SMTP_PASSWORD,
-  //   },
-  // });
-  //
-  // await transporter.sendMail({
-  //   from: process.env.SMTP_FROM,
-  //   to: email,
-  //   subject: "Verify your email",
-  //   html: `<a href="${verifyUrl}">Verify your email</a>`,
-  // });
-
-  return true;
+  return sendAuthEmail({
+    email,
+    token,
+    subject: "Verify your email",
+    path: "verify-email",
+    title: "verify your email",
+  });
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
-  const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
-
-  // Mock implementation - Replace with actual email service
-  console.log(`Password reset email would be sent to ${email}: ${resetUrl}`);
-
-  return true;
+  return sendAuthEmail({
+    email,
+    token,
+    subject: "Reset your password",
+    path: "reset-password",
+    title: "reset your password",
+  });
 }

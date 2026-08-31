@@ -1,6 +1,39 @@
-import { describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { dedupeNotificationList } from '@/components/layout/navbar';
+import { dedupeNotificationList, Navbar } from '@/components/layout/navbar';
+import { useWorkspaceStore } from '@/store/workspace-store';
+
+const { mockSession, push, signOut } = vi.hoisted(() => ({
+  mockSession: {
+    user: {
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+    },
+  },
+  push: vi.fn(),
+  signOut: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push }),
+}));
+
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({ data: mockSession }),
+  signOut,
+}));
+
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    })
+  );
+});
 
 describe('dedupeNotificationList', () => {
   it('keeps the current list when the stored notifications are unchanged', () => {
@@ -34,5 +67,29 @@ describe('dedupeNotificationList', () => {
         (notification) => notification.id
       )
     ).toEqual(['0', '1', '2', '3', '4', '5']);
+  });
+
+  it('closes the profile menu when clicking outside it', async () => {
+    useWorkspaceStore.setState({
+      currentWorkspaceId: null,
+      workspaces: [],
+      setCurrentWorkspaceId: vi.fn(),
+      setWorkspaces: vi.fn(),
+    });
+
+    const user = userEvent.setup();
+    render(
+      <div>
+        <button type="button">Outside</button>
+        <Navbar />
+      </div>
+    );
+
+    await user.click(screen.getByRole('button', { name: /user menu/i }));
+    expect(screen.getByRole('link', { name: /profile/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /outside/i }));
+
+    expect(screen.queryByRole('link', { name: /profile/i })).not.toBeInTheDocument();
   });
 });
