@@ -46,7 +46,7 @@ interface SidebarProps {
 
 export const Sidebar = React.memo<SidebarProps>(({ className }) => {
   const pathname = usePathname();
-  const { isOpen, toggle } = useSidebarStore();
+  const { isOpen, toggle, close } = useSidebarStore();
   const { currentWorkspaceId, workspaces } = useWorkspaceStore();
   const [projects, setProjects] = React.useState<ProjectSidebarItem[]>([]);
   const activeWorkspace = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
@@ -141,6 +141,7 @@ export const Sidebar = React.memo<SidebarProps>(({ className }) => {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => close()}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   active
@@ -165,6 +166,7 @@ export const Sidebar = React.memo<SidebarProps>(({ className }) => {
                 <Link
                   key={project.id}
                   href="/dashboard/projects"
+                  onClick={() => close()}
                   className={cn(
                     "flex items-center justify-between rounded-lg px-2 py-2 text-sm transition-colors",
                     pathname === "/dashboard/projects"
