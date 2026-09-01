@@ -180,13 +180,15 @@ export const Navbar: React.FC<NavbarProps> = ({ className }) => {
             <Menu className="h-4 w-4" />
           </Button>
 
-          <div className="flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-2 shadow-sm">
-            <div className="rounded-full bg-primary/10 p-2 text-primary">
-              <Sparkles className="h-4 w-4" />
+          <div className="flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-2 py-1.5 shadow-sm sm:px-3 sm:py-2">
+            <div className="shrink-0 rounded-full bg-primary/10 p-1.5 text-primary sm:p-2">
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <div>
-              <p className="text-sm font-semibold">FlowForge AI</p>
-              <p className="text-xs text-muted-foreground">Product studio</p>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold sm:text-sm">FlowForge AI</p>
+              <p className="hidden text-[10px] text-muted-foreground sm:block">
+                Product studio
+              </p>
             </div>
           </div>
         </div>
